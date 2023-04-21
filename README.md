@@ -22,3 +22,5 @@ or
 ```
 MAX_TOKENS=2048 CHATGPT_CLI_MODEL=gpt-3.5-turbo python chat.py
 ```
+
+To submit a message, press Ctrl + Enter. Or just press Enter on an empty input line.

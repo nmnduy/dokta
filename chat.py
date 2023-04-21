@@ -63,17 +63,16 @@ def main():
             user_message = ""
             while True:
                 line = input()
+                if not line:  # Check if line is empty
+                    break
                 user_message += line + "\n"
-        # ctrl + z or ctrl + d to end input
-        except EOFError:
-            pass
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, EOFError):
             print("Goodbye! Have a nice day.")
             sys.exit()
 
         if not user_message.strip():
-            print("Goodbye! Have a nice day.")
-            sys.exit()
+            print(f"\033[33mPlease enter a message.\033[0m")
+            continue
 
         if user_message.lower() in ["quit", "exit", "bye"]:
             break
@@ -91,7 +90,7 @@ def main():
         print()
         print(f"\033[33mOne moment...\033[0m")
 
-        if count_tokens(user_message) > MAX_TOKENS:
+        if count_tokens(user_message) > max_tokens:
             print("Your message is too long. Please try again.")
             continue
 
