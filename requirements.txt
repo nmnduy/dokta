@@ -1,0 +1,5 @@
+openai
+langchain
+sqlalchemy
+transformers
+duckduckgo_search
