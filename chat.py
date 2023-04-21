@@ -72,8 +72,8 @@ def main():
             sys.exit()
 
         if not user_message.strip():
-            print("Please enter a message.")
-            continue
+            print("Goodbye! Have a nice day.")
+            sys.exit()
 
         if user_message.lower() in ["quit", "exit", "bye"]:
             break
