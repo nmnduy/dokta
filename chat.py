@@ -53,7 +53,11 @@ def count_tokens(text):
 def main():
     model = os.environ["CHATGPT_CLI_MODEL"]
     max_tokens = int(os.environ["MAX_TOKENS"])
-    print("Using model:", model)
+    print_green(f"Using model: {model}. Max tokens: {max_tokens}")
+    print()
+    print(f"\033[33mCtrl + D to submit a message\033[0m")
+    print(f"\033[33mCtrl + C to exit. Or type quit\033[0m")
+    print()
     db_session = setup_database_connection("convo_db.sqlite")()
 
     while True:
@@ -66,12 +70,15 @@ def main():
                 if not line:  # Check if line is empty
                     break
                 user_message += line + "\n"
-        except (KeyboardInterrupt, EOFError):
+        # ctrl + z or ctrl + d to submit
+        except EOFError:
+            pass
+        except KeyboardInterrupt:
             print("Goodbye! Have a nice day.")
             sys.exit()
 
         if not user_message.strip():
-            print(f"\033[33mPlease enter a message.\033[0m")
+            print_yellow("Message is empty. Please enter a message.")
             continue
 
         if user_message.lower() in ["quit", "exit", "bye"]:
