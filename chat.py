@@ -6,8 +6,6 @@ import openai
 from transformers import GPT2Tokenizer
 from convo_db import setup_database_connection, add_entry, get_entries_past_week
 
-MAX_TOKENS = int(os.environ.get("MAX_TOKENS", 4096))      # The maximum number of tokens for the conversation history. should be able to fit it in the model
-
 
 def print_green(text):
     print(f"\033[32m{text}\033[0m")
@@ -54,6 +52,7 @@ def count_tokens(text):
 
 def main():
     model = os.environ["CHATGPT_CLI_MODEL"]
+    max_tokens = int(os.environ["MAX_TOKENS"])
     print("Using model:", model)
     db_session = setup_database_connection("convo_db.sqlite")()
 
@@ -84,6 +83,11 @@ def main():
             print("Switching to model:", model)
             continue
 
+        if user_message.startswith("\max_tokens"):
+            max_tokens = int(user_message.split()[1])
+            print("Setting model token limit to:", max_tokens)
+            continue
+
         print()
         print(f"\033[33mOne moment...\033[0m")
 
@@ -93,7 +97,7 @@ def main():
 
         add_entry(db_session, "user", user_message)
 
-        conversation_history = load_conversation_history(db_session, max_tokens=MAX_TOKENS)
+        conversation_history = load_conversation_history(db_session, max_tokens=max_tokens)
         if not conversation_history:
             raise ValueError("Conversation history is empty")
 
