@@ -67,8 +67,6 @@ def main():
             user_message = ""
             while True:
                 line = input()
-                if not line:  # Check if line is empty
-                    break
                 user_message += line + "\n"
         # ctrl + z or ctrl + d to submit
         except EOFError:
