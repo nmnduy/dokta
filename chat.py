@@ -56,7 +56,7 @@ def main():
     print_green(f"Using model: {model}. Max tokens: {max_tokens}")
     print()
     print(f"\033[33mCtrl + D to submit a message\033[0m")
-    print(f"\033[33mCtrl + C to exit. Or type quit\033[0m")
+    print(f"\033[33mCtrl + C to exit. Or type quit then Enter\033[0m")
     print()
     db_session = setup_database_connection("convo_db.sqlite")()
 
