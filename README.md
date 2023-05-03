@@ -14,11 +14,16 @@ export OPENAI_API_KEY=<your openai API key>
 then start the chat with
 
 ```
-MAX_TOKENS=4096 CHATGPT_CLI_MODEL=gpt-4 python chat.py
+CHATGPT_CLI_MODEL=gpt-4 python chat.py
 ```
 
 or
 
 ```
-MAX_TOKENS=2048 CHATGPT_CLI_MODEL=gpt-3.5-turbo python chat.py
+CHATGPT_CLI_MODEL=gpt-3.5-turbo python chat.py
 ```
+
+## Models
+
+
+There are 2 models listed in `config.json`. Update that config file to add more models.
