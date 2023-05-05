@@ -27,3 +27,17 @@ CHATGPT_CLI_MODEL=gpt-3.5-turbo python chat.py
 
 
 There are 2 models listed in `config.json`. Update that config file to add more models.
+
+
+## DB Migration
+
+Used this tool: `https://github.com/pressly/goose`
+
+Usage:
+
+```bash
+goose -dir migration/ sqlite3 ./convo_db.sqlite.db status
+goose -dir migration/ sqlite3 ./convo_db.sqlite.db up-by-one
+goose -dir migration/ sqlite3 ./convo_db.sqlite.db up
+goose -dir migration/ sqlite3 ./convo_db.sqlite.db down
+```
