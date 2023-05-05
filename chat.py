@@ -4,11 +4,15 @@ import sys
 import readline
 import json
 import openai
-from transformers import GPT2Tokenizer
+import tiktoken
 from convo_db import setup_database_connection, add_entry, get_entries_past_week
 
 
 CONFIG = json.load(open("config.json"))
+
+# 'cl100k_base' is for gpt-4 and gpt-3.5-turbo
+# https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
+ENCODER = tiktoken.get_encoding('cl100k_base')
 
 
 class ModelSwitch(Exception):
@@ -63,9 +67,7 @@ def chat_with_openai(prompt, model):
 
 
 def count_tokens(text):
-    tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-    tokens = tokenizer.encode(text)
-    return len(tokens)
+    return len(ENCODER.encode(text))
 
 
 def main():
