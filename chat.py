@@ -1,39 +1,22 @@
 import re
 import os
 import sys
-import readline
 import json
 import openai
 import tiktoken
+from structs import State
+from prompt import get_prompt
+from config import get_model_config
+from print_colors import print_green, print_yellow
 from convo_db import setup_database_connection, add_entry, get_entries_past_week
 
 
-CONFIG = json.load(open("config.json"))
 
 # 'cl100k_base' is for gpt-4 and gpt-3.5-turbo
 # https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
 ENCODER = tiktoken.get_encoding('cl100k_base')
+STATE = State(model='', max_tokens=0)
 
-
-class ModelSwitch(Exception):
-    pass
-
-
-def parse_model_change(line: str):
-    model = line.split(" ")[1]
-    try:
-        model_config = next(m for m in CONFIG["models"] if m['name'] == model)
-    except StopIteration:
-        raise LookupError(f"Model {model} not found in config.json")
-    max_tokens = model_config["max_tokens"]
-    return model, max_tokens
-
-
-def print_green(text):
-    print(f"\033[32m{text}\033[0m")
-
-def print_yellow(text):
-    print(f"\033[33m{text}\033[0m")
 
 
 
@@ -72,11 +55,8 @@ def count_tokens(text):
 
 def main():
     model = os.environ["CHATGPT_CLI_MODEL"]
-    try:
-        model_config = next(m for m in CONFIG["models"] if m['name'] == model)
-    except StopIteration:
-        raise LookupError(f"Model {model} not found in config.json")
-    max_tokens = model_config["max_tokens"]
+    max_tokens = get_model_config(model)["max_tokens"]
+    STATE = State(model, max_tokens)
 
     print_green(f"Using model: {model}. Max tokens: {max_tokens}")
     print()
@@ -85,42 +65,13 @@ def main():
     print()
     db_session = setup_database_connection("convo_db.sqlite")()
 
-    model_regex = re.compile(r"\\model\s(\w+)")
-
     while True:
         print()
         print(f"\033[32mYou:\033[0m")
-        try:
-            user_message = ""
-            while True:
-                line = input()
-
-                if not line:  # Check if line is empty
-                    user_message += "\n"
-
-                if re.match(model_regex, line):
-                    model, max_tokens = parse_model_change(line)
-                    print_green(f"Using model: {model}. Max tokens: {max_tokens}")
-                    raise ModelSwitch()
-
-                user_message += line + "\n"
-
-        # ctrl + z or ctrl + d to submit
-        except EOFError:
-            pass
-        # trick to reset the prompt after we switch model
-        except ModelSwitch:
-            continue
-        except KeyboardInterrupt:
-            print("Goodbye! Have a nice day.")
-            sys.exit()
-
-        if not user_message.strip():
-            print_yellow("Message is empty. Please enter a message.")
-            continue
+        user_message = get_prompt(STATE)
 
         print()
-        print(f"\033[33mOne moment...\033[0m")
+        print(f"\033[33mSubmitting...\033[0m")
 
         if count_tokens(user_message) > max_tokens:
             print("Your message is too long. Please try again.")

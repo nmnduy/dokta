@@ -1,0 +1,3 @@
+
+class ModelSwitch(Exception):
+    pass
