@@ -1,3 +1,3 @@
 
-class ModelSwitch(Exception):
+class InputResetException(Exception):
     pass

@@ -4,11 +4,12 @@ import sys
 import json
 import openai
 import tiktoken
+import readline
 from .structs import State
 from .prompt import get_prompt
 from .config import get_model_config
 from .print_colors import print_green, print_yellow
-from .convo_db import setup_database_connection, add_entry, get_entries_past_week
+from .convo_db import setup_database_connection, add_entry, get_entries_past_week, DB_NAME
 
 
 
@@ -20,8 +21,11 @@ STATE = State(model='', max_tokens=0)
 
 
 
-def load_conversation_history(session, max_tokens=2048): # -> List[Dict[str, str]]:
-    entries = get_entries_past_week(session)
+def load_conversation_history(db_session, state: State): # -> List[Dict[str, str]]:
+    max_tokens = state.max_tokens
+    model = state.model
+    session_id = state.session_id
+    entries = get_entries_past_week(db_session, session_id=session_id)
 
     token_count = 0
     conversation_text = []
@@ -36,7 +40,8 @@ def load_conversation_history(session, max_tokens=2048): # -> List[Dict[str, str
     return conversation_text[::-1]
 
 
-def chat_with_openai(prompt, model):
+def chat_with_openai(prompt, state: State):
+    model = state.model
     response = openai.ChatCompletion.create(
         model=model,
         messages=prompt,
@@ -59,16 +64,17 @@ def main():
     max_tokens = get_model_config(model)["max_tokens"]
     STATE = State(model, max_tokens)
 
+    print()
+    print_yellow("Type your message, then hit Ctrl + D on an empty line to submit")
+    print_yellow("Ctrl + C to exit")
+    print()
     print_green(f"Using model: {model}. Max tokens: {max_tokens}")
-    print()
-    print(f"\033[33mCtrl + D on an empty line to submit a message\033[0m")
-    print(f"\033[33mCtrl + C to exit\033[0m")
-    print()
-    db_session = setup_database_connection("convo_db.sqlite")()
+    db_session = setup_database_connection(DB_NAME)()
+
+    readline.parse_and_bind("tab: complete")
+    readline.set_completer_delims(' \t\n')
 
     while True:
-        print()
-        print(f"\033[32mYou:\033[0m")
         user_message = get_prompt(STATE)
 
         print()
@@ -80,12 +86,16 @@ def main():
 
         add_entry(db_session, "user", user_message)
 
-        conversation_history = load_conversation_history(db_session, max_tokens=max_tokens)
+        conversation_history = load_conversation_history(db_session, STATE)
         if not conversation_history:
             raise ValueError("Conversation history is empty")
 
-        ai_response = chat_with_openai(conversation_history, model)
-        add_entry(db_session, "assistant", ai_response)
+        ai_response = chat_with_openai(conversation_history, STATE)
+        add_entry(db_session,
+                  "assistant",
+                  ai_response,
+                  STATE.session_id,
+                  )
 
         print()
         print(f"\033[33mAssistant: \033[0m{ai_response}")
