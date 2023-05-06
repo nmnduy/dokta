@@ -2,9 +2,9 @@ import sys
 import re
 import json
 import readline
-from exceptions import ModelSwitch
-from print_colors import print_green, print_yellow
-from config import CONFIG, get_model_config
+from .exceptions import ModelSwitch
+from .print_colors import print_green, print_yellow
+from .config import CONFIG, get_model_config
 
 
 

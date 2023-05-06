@@ -2,3 +2,16 @@ __pycache__
 venv/
 .envrc
 *.sqlite.db
+
+
+# Python bytecode files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+
+# Distribution files
+*.egg-info/
+dist/
+build/

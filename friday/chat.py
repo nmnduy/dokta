@@ -4,11 +4,11 @@ import sys
 import json
 import openai
 import tiktoken
-from structs import State
-from prompt import get_prompt
-from config import get_model_config
-from print_colors import print_green, print_yellow
-from convo_db import setup_database_connection, add_entry, get_entries_past_week
+from .structs import State
+from .prompt import get_prompt
+from .config import get_model_config
+from .print_colors import print_green, print_yellow
+from .convo_db import setup_database_connection, add_entry, get_entries_past_week
 
 
 
@@ -44,6 +44,7 @@ def chat_with_openai(prompt, model):
         n=1,
         stop=None,
         temperature=0.7,
+        timeout=120,
     )
 
     return response.choices[0].message['content']
