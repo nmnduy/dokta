@@ -1,3 +1,6 @@
+import hashlib
+import os
+import time
 from datetime import timedelta
 from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, DateTime
@@ -7,6 +10,24 @@ from .models import Base, ConversationEntry, Session
 
 
 DB_NAME = "convo_db.sqlite"
+
+
+
+def random_hash():
+
+    # Generate a random salt using the OS-provided seed
+    salt = os.urandom(16)
+
+    # Generate a time-based message to hash
+    msg = str(time.time()).encode('utf-8')
+
+    # Concatenate the salt and message
+    msg_salt = salt + msg
+
+    # Generate the hash using SHA-256
+    hash_obj = hashlib.sha256(msg_salt)
+    hash_val = hash_obj.hexdigest()
+    return hash_val
 
 
 # Set up the database connection
@@ -54,7 +75,11 @@ class Db:
         self.db_session = setup_database_connection(DB_NAME)()
 
 
-    def create_chat_session(self, name: str) -> int:
+    def create_chat_session(self,
+                            name = None, # Optiona[str] = None
+                            ) -> int:
+        if name is None:
+            name = random_hash()
         session = Session(name=name)
         self.db_session.add(session)
         self.db_session.commit()
@@ -68,3 +93,12 @@ class Db:
 
     def get_all_chat_sessions(self): # List[Session]:
         return self.db_session.query(Session).all()
+
+
+    def rename_chat_session(self,
+                            session_id: int,
+                            new_name: str,
+                            ) -> None:
+        session = self.db_session.query(Session).get(session_id)
+        session.name = new_name
+        self.db_session.commit()

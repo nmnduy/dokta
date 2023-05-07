@@ -12,12 +12,14 @@ from .convo_db import Db
 MODELS = [mod["name"] for mod in CONFIG["models"]]
 COMMANDS = ["\\model",
             "\\session",
-            "\\list_session"]
+            "\\list_session",
+            "\\rename_session",
+            ]
 MODEL_REGEX = re.compile(r"\\model")
 SESSION_REGEX = re.compile(r"\\session")
+RENAME_SESSION_REGEX = re.compile(r"\\rename_session")
 LIST_SESSION_REGEX = re.compile(r"\\list_session")
-
-
+RANDOM_HASH_REGEX = re.compile(r"^[a-fA-F0-9]{64}$")
 
 
 
@@ -63,7 +65,10 @@ def get_prompt(state, # : State
 
     user_message = ""
 
-    options = MODELS + COMMANDS + [item.name for item in Db().get_all_chat_sessions()]
+    options = MODELS + COMMANDS + [
+        item.name for item in Db().get_all_chat_sessions()
+        if not re.match(RANDOM_HASH_REGEX, item.name)
+    ]
     completer = AutoComplete(list(set(options)))
     readline.set_completer_delims(' \t\n;')
     readline.set_completer(completer.complete)
@@ -110,9 +115,28 @@ def get_prompt(state, # : State
                         print_green(f"New session: {session_name}")
                         state.session_id = db.create_chat_session(session_name)
                     else:
-                        print_green(f"Getting back past messages from session: {session_name}")
+                        print_green(f"Switching to session: {session_name}")
                         state.session_id = session.id
                 raise InputResetException()
+
+
+            if re.match(RENAME_SESSION_REGEX, line):
+
+                # avoid name collision by turnin off autocomplete
+                readline.set_completer()
+
+                try:
+                    session_name = re.match(r"\\rename_session (.*)", line).group(1)
+                except AttributeError:
+                    print_yellow("Please enter a session name. Like \\session my_session")
+
+                if Db().find_session(session_name):
+                    print_yellow(f"Session {session_name} already exists.")
+                    raise InputResetException()
+                else:
+                    db = Db()
+                    db.rename_chat_session(state.session_id, session_name)
+                    print_green(f"Renamed session to: {session_name}")
 
 
             if re.match(LIST_SESSION_REGEX, line):

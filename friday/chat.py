@@ -8,7 +8,7 @@ from .structs import State
 from .prompt import get_prompt
 from .config import get_model_config
 from .print_colors import print_green, print_yellow
-from .convo_db import setup_database_connection, add_entry, get_entries_past_week, DB_NAME
+from .convo_db import setup_database_connection, add_entry, get_entries_past_week, DB_NAME, Db
 
 
 
@@ -61,7 +61,7 @@ def count_tokens(text):
 def main():
     model = os.environ["CHATGPT_CLI_MODEL"]
     max_tokens = get_model_config(model)["max_tokens"]
-    STATE = State(model, max_tokens)
+    STATE = State(model, max_tokens, session_id=Db().create_chat_session())
 
     print()
     print_yellow("Type your message, then hit Ctrl + D on an empty line to submit")
@@ -71,7 +71,7 @@ def main():
     db_session = setup_database_connection(DB_NAME)()
 
     while True:
-        user_message = get_prompt(STATE)
+        user_message = get_prompt(STATE).strip()
 
         print()
         print(f"\033[33mSubmitting...\033[0m")
@@ -80,7 +80,7 @@ def main():
             print("Your message is too long. Please try again.")
             continue
 
-        add_entry(db_session, "user", user_message)
+        add_entry(db_session, "user", user_message, STATE.session_id)
 
         conversation_history = load_conversation_history(db_session, STATE)
         if not conversation_history:
