@@ -4,7 +4,6 @@ import sys
 import json
 import openai
 import tiktoken
-import readline
 from .structs import State
 from .prompt import get_prompt
 from .config import get_model_config
@@ -70,9 +69,6 @@ def main():
     print()
     print_green(f"Using model: {model}. Max tokens: {max_tokens}")
     db_session = setup_database_connection(DB_NAME)()
-
-    readline.parse_and_bind("tab: complete")
-    readline.set_completer_delims(' \t\n')
 
     while True:
         user_message = get_prompt(STATE)

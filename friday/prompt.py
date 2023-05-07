@@ -21,7 +21,6 @@ LIST_SESSION_REGEX = re.compile(r"\\list_session")
 
 
 
-
 def model_complete(text, state):
     results = [x for x in MODELS if x.startswith(text)] + [None]
     if text == results[state]:
@@ -29,32 +28,33 @@ def model_complete(text, state):
     return results[state]
 
 
+
+
+
+class AutoComplete(object):
+
+    def __init__(self, options):
+        self.options = sorted(options)
+
+    def complete(self, text, state):
+        if state == 0:  # on first trigger, build possible matches
+            if not text:
+                self.matches = self.options[:]
+            else:
+                self.matches = [s for s in self.options
+                                if s and s.startswith(text)]
+
+        try:
+            return self.matches[state]
+        except IndexError:
+            return None
+
+
+
 def command_complete(text, state):
-    results = [x for x in COMMANDS if x.startswith(text)] + [None]
-    if text == results[state]:
-        return None
+    results = [x for x in options if x.startswith(text)] + [None]
     return results[state]
 
-
-# def session_complete(text, state):
-#     db = Db()
-#     sessions = db.get_all_chat_sessions()
-#     results = [x.name for x in sessions if x.startswith(text)] + [None]
-#     if text == results[state]:
-#         return None
-#     return results[state]
-
-
-
-def switch_model(): #  -> str
-    print_yellow(f"Options: {MODELS}")
-
-    readline.set_completer(model_complete)
-
-    line = input("Model: ")
-
-    model = line.strip()
-    return model
 
 
 
@@ -62,7 +62,12 @@ def get_prompt(state, # : State
                ):
 
     user_message = ""
-    readline.set_completer(command_complete)
+
+    options = MODELS + COMMANDS + [item.name for item in Db().get_all_chat_sessions()]
+    completer = AutoComplete(list(set(options)))
+    readline.set_completer_delims(' \t\n;')
+    readline.set_completer(completer.complete)
+    readline.parse_and_bind('tab: complete')
 
     print()
     print(f"\033[32mYou:\033[0m")
@@ -79,7 +84,7 @@ def get_prompt(state, # : State
 
             if re.match(MODEL_REGEX, line):
 
-                model = switch_model()
+                model = re.match(r"\\model (.*)", line).group(1)
 
                 try:
                     state.max_tokens = get_model_config(model)["max_tokens"]
@@ -89,7 +94,6 @@ def get_prompt(state, # : State
 
                 state.model = model
                 print_green(f"Using model: {state.model}. Max context: {state.max_tokens}")
-                print_green("You: ")
                 user_message = ""
                 raise InputResetException()
 
@@ -128,6 +132,8 @@ def get_prompt(state, # : State
             break
         # trick to reset the prompt after we switch model
         except InputResetException:
+            print()
+            print_green(f"You:")
             continue
         except KeyboardInterrupt:
             print("Goodbye! Have a nice day.")
