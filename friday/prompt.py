@@ -128,7 +128,7 @@ def get_prompt(state, # : State
                 try:
                     session_name = re.match(r"\\rename_session (.*)", line).group(1)
                 except AttributeError:
-                    print_yellow("Please enter a session name. Like \\session my_session")
+                    print_yellow("Please enter a session name. Like \\rename_session my_session")
 
                 if Db().find_session(session_name):
                     print_yellow(f"Session {session_name} already exists.")
