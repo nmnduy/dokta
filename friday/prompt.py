@@ -153,6 +153,9 @@ def get_prompt(state, # : State
 
         # ctrl + z or ctrl + d to submit
         except EOFError:
+            if not user_message.strip():
+                print("Buh bye")
+                sys.exit()
             break
         # trick to reset the prompt after we switch model
         except InputResetException:
