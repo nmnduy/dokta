@@ -14,11 +14,13 @@ COMMANDS = ["\\model",
             "\\session",
             "\\list_session",
             "\\rename_session",
+            "\\messages",
             ]
 MODEL_REGEX = re.compile(r"\\model")
 SESSION_REGEX = re.compile(r"\\session")
 RENAME_SESSION_REGEX = re.compile(r"\\rename_session")
 LIST_SESSION_REGEX = re.compile(r"\\list_session")
+MESSAGES_REGEX = re.compile(r"\\messages")
 RANDOM_HASH_REGEX = re.compile(r"^[a-fA-F0-9]{64}$")
 
 
@@ -137,6 +139,21 @@ def get_prompt(state, # : State
                     db = Db()
                     db.rename_chat_session(state.session_id, session_name)
                     print_green(f"Renamed session to: {session_name}")
+
+
+            if re.match(MESSAGES_REGEX, line):
+                db = Db()
+                messages = db.get_entries_past_week(state.session_id)
+                sorted(messages,
+                       key=lambda x: x.created_at,
+                       reverse=True)
+                for msg in messages:
+                    if msg.role == "user":
+                        print_green(f"You: {msg.content}" + "\n")
+                    if msg.role == "assistant":
+                        print(f"Assistant: {msg.content}" + "\n")
+                raise InputResetException()
+
 
 
             if re.match(LIST_SESSION_REGEX, line):

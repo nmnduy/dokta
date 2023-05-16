@@ -102,3 +102,11 @@ class Db:
         session = self.db_session.query(Session).get(session_id)
         session.name = new_name
         self.db_session.commit()
+
+
+    def get_entries_past_week(self,
+                              session_id = int,
+                              ):
+        session = self.db_session.query(Session).get(session_id)
+        one_week_ago = datetime.utcnow() - timedelta(weeks=1)
+        return self.db_session.query(ConversationEntry).filter(ConversationEntry.created_at >= one_week_ago).filter(ConversationEntry.session_id == session_id).all()
