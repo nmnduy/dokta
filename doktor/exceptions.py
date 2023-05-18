@@ -1,0 +1,3 @@
+
+class InputResetException(Exception):
+    pass
