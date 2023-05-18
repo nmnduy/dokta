@@ -1,11 +1,16 @@
-Another chatbot
+Another chatbot that calls OpenAI models, with some
 
-Setup
+## features
+
+- Chat messages are stored locally
+- Chats have sessions, which are group of messages
+
+## Setup
 ```
 pip3 install -e .
 ```
 
-Usage 
+## Usage
 
 ```
 export OPENAI_API_KEY=<your openai API key>
@@ -42,6 +47,7 @@ Messages in the same session are sent to OpenAI API together.
 
 `\sessions` to list all your named sessions.
 
+`\messages` to see messages in the current session.
 
 ## DB Migration
 
