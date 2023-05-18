@@ -1,12 +1,13 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="friday-chat",
+    name="doktor",
     version="0.1.0",
     packages=find_packages(),
     install_requires=[
         "openai",
-        # Add any other dependencies here
+        "tiktoken",
+        "sqlalchemy",
     ],
     entry_points={
         "console_scripts": [

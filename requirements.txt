@@ -1,5 +1,0 @@
-openai
-langchain
-sqlalchemy
-duckduckgo_search
-tiktoken
