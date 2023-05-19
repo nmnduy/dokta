@@ -110,3 +110,7 @@ class Db:
         session = self.db_session.query(Session).get(session_id)
         one_week_ago = datetime.utcnow() - timedelta(weeks=1)
         return self.db_session.query(ConversationEntry).filter(ConversationEntry.created_at >= one_week_ago).filter(ConversationEntry.session_id == session_id).all()
+
+
+    def get_last_session(self, offset: int = 0) -> Session:
+        return self.db_session.query(Session).order_by(Session.id.desc()).offset(offset).first()

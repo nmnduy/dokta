@@ -15,12 +15,14 @@ COMMANDS = ["\\model",
             "\\list_session",
             "\\rename_session",
             "\\messages",
+            "\\last_session",
             ]
 MODEL_REGEX = re.compile(r"\\model")
 SESSION_REGEX = re.compile(r"\\session")
 RENAME_SESSION_REGEX = re.compile(r"\\rename_session")
 LIST_SESSION_REGEX = re.compile(r"\\list_session")
 MESSAGES_REGEX = re.compile(r"\\messages")
+LAST_SESSION_REGEX = re.compile(r"\\last_session")
 RANDOM_HASH_REGEX = re.compile(r"^[a-fA-F0-9]{64}$")
 
 
@@ -165,6 +167,19 @@ def get_prompt(state, # : State
                     print_yellow(f"  {session.name}")
                 raise InputResetException()
 
+
+            if re.match(LAST_SESSION_REGEX, line):
+                db = Db()
+                offset = re.match(r"\\last_session (\d+)", line).group(1)
+                if not offset:
+                    offset = 0
+                session = db.get_last_session(offset)
+                if not session:
+                    print_red("No last session found.")
+                else:
+                    print_green(f"Switching to session: {session.name}")
+                    state.session_id = session.id
+                raise InputResetException()
 
             user_message += line + "\n"
 
