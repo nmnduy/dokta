@@ -141,6 +141,7 @@ def get_prompt(state, # : State
                     db = Db()
                     db.rename_chat_session(state.session_id, session_name)
                     print_green(f"Renamed session to: {session_name}")
+                    raise InputResetException()
 
 
             if re.match(MESSAGES_REGEX, line):
