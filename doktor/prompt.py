@@ -170,9 +170,10 @@ def get_prompt(state, # : State
 
             if re.match(LAST_SESSION_REGEX, line):
                 db = Db()
-                offset = re.match(r"\\last_session (\d+)", line).group(1)
-                if not offset:
-                    offset = 0
+                try:
+                    offset = re.match(r"\\last_session (\d+)", line).group(1)
+                except AttributeError:
+                    offset = 1
                 session = db.get_last_session(offset)
                 if not session:
                     print_red("No last session found.")
