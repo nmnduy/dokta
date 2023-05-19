@@ -67,7 +67,7 @@ def main():
     print_yellow("Type your message, then hit Ctrl + D on an empty line to submit")
     print_yellow("Ctrl + C to exit")
     print()
-    print_green(f"Using model: {model}. Max tokens: {max_tokens}")
+    print_green(f"Using model: {model}. Context length: {max_tokens}")
     db_session = setup_database_connection(DB_NAME)()
 
     while True:
