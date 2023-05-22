@@ -61,3 +61,13 @@ goose -dir migration/ sqlite3 ./convo_db.sqlite.db up-by-one
 goose -dir migration/ sqlite3 ./convo_db.sqlite.db up
 goose -dir migration/ sqlite3 ./convo_db.sqlite.db down
 ```
+
+
+## Terminating input
+
+It's surprisingly complicated to Ctrl+Enter to terminate input.(Maybe it's not that complicated, please submit a PR).
+
+Here are ways to terminate input:
+
+- On a new line, hit `Ctrl+D`
+- On a new line, `<` then `Tab`, which will produce `<endofinput>`, then `Enter`

@@ -16,7 +16,9 @@ COMMANDS = ["\\model",
             "\\rename_session",
             "\\messages",
             "\\last_session",
+            "<endofinput>",
             ]
+END_OF_INPUT = re.compile(r"<endofinput>")
 MODEL_REGEX = re.compile(r"\\model")
 SESSION_REGEX = re.compile(r"\\session")
 RENAME_SESSION_REGEX = re.compile(r"\\rename_session")
@@ -159,7 +161,8 @@ def get_prompt(state, # : State
                         print(msg.content)
                 raise InputResetException()
 
-
+            if re.match(END_OF_INPUT, line):
+                raise EOFError()
 
             if re.match(LIST_SESSION_REGEX, line):
                 db = Db()
