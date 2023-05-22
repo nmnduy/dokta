@@ -152,9 +152,11 @@ def get_prompt(state, # : State
                        reverse=True)
                 for msg in messages:
                     if msg.role == "user":
-                        print_green(f"You: {msg.content}" + "\n")
+                        print_green(f"You:\n")
+                        print(msg.content)
                     if msg.role == "assistant":
-                        print(f"Assistant: {msg.content}" + "\n")
+                        print_yellow(f"Assistant:\n")
+                        print(msg.content)
                 raise InputResetException()
 
 
