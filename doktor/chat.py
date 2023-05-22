@@ -113,8 +113,9 @@ def main():
                   )
 
         print()
-        print(f"\033[33mAssistant: \033[0m{ai_response}")
-        print()
+        print_yellow("Assistant:" + "\n")
+        print(ai_response)
+        print('\a')
 
 
 if __name__ == "__main__":
