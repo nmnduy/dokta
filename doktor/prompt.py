@@ -136,14 +136,20 @@ def get_prompt(state, # : State
                 except AttributeError:
                     print_yellow("Please enter a session name. Like \\rename_session my_session")
 
-                if Db().find_session(session_name):
-                    print_yellow(f"Session {session_name} already exists.")
+                    readline.set_completer(completer.complete)
                     raise InputResetException()
-                else:
-                    db = Db()
-                    db.rename_chat_session(state.session_id, session_name)
-                    print_green(f"Renamed session to: {session_name}")
-                    raise InputResetException()
+
+                db = Db()
+                sesh = db.find_session(session_name)
+                if sesh:
+                    id_ = random_hash()
+                    print_yellow(f"Session {session_name} already exists. Replacing it with random id {id_}")
+                    db.rename_chat_session(sesh.id, id_)
+
+                db.rename_chat_session(state.session_id, session_name)
+                print_green(f"Renamed current session to: {session_name}")
+                readline.set_completer(completer.complete)
+                raise InputResetException()
 
 
             if re.match(MESSAGES_REGEX, line):
