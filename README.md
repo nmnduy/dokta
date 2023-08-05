@@ -41,6 +41,8 @@ To switch models, in the chat prompt, type `\model <model_name>`. You can use `T
 
 Messages in the same session are sent to OpenAI API together.
 
+`\session` to switch to a new session
+
 `\session <name>` to switch to a new session with the given name. If you have an old session that you want to switch to, you can also use this command to do that. Use `Tab` to auto complete the session name.
 
 `\rename_session <new name>` to rename the current session to some name. By default, every conversation has a session, with a random hash name. You can `\rename_session` to mark it for use later.
