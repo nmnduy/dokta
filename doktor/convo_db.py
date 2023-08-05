@@ -1,33 +1,16 @@
-import hashlib
-import os
-import time
 from datetime import timedelta
 from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from .models import Base, ConversationEntry, Session
+from .utils import random_hash
 
 
 DB_NAME = "convo_db.sqlite"
 
 
 
-def random_hash():
-
-    # Generate a random salt using the OS-provided seed
-    salt = os.urandom(16)
-
-    # Generate a time-based message to hash
-    msg = str(time.time()).encode('utf-8')
-
-    # Concatenate the salt and message
-    msg_salt = salt + msg
-
-    # Generate the hash using SHA-256
-    hash_obj = hashlib.sha256(msg_salt)
-    hash_val = hash_obj.hexdigest()
-    return hash_val
 
 
 # Set up the database connection

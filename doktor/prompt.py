@@ -6,6 +6,7 @@ from .exceptions import InputResetException
 from .print_colors import print_green, print_yellow
 from .config import CONFIG, get_model_config
 from .convo_db import Db
+from .utils import random_hash
 
 
 
@@ -113,16 +114,15 @@ def get_prompt(state, # : State
                 try:
                     session_name = re.match(r"\\session (.*)", line).group(1)
                 except AttributeError:
-                    print_yellow("Please enter a session name. Like \\session my_session")
+                    session_name = random_hash()
+                db = Db()
+                session = db.find_session(session_name)
+                if not session:
+                    print_green(f"New session: {session_name}")
+                    state.session_id = db.create_chat_session(session_name)
                 else:
-                    db = Db()
-                    session = db.find_session(session_name)
-                    if not session:
-                        print_green(f"New session: {session_name}")
-                        state.session_id = db.create_chat_session(session_name)
-                    else:
-                        print_green(f"Switching to session: {session_name}")
-                        state.session_id = session.id
+                    print_green(f"Switching to session: {session_name}")
+                    state.session_id = session.id
                 raise InputResetException()
 
 
