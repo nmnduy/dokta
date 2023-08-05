@@ -66,11 +66,18 @@ def chat_with_openai(prompt, state: State):
         # max_tokens=150,
         n=1,
         stop=None,
-        temperature=0.7,
+        temperature=1.0,
         timeout=120,
+        stream=True,
     )
-
-    return response.choices[0].message['content']
+    for chunk in response:
+        try:
+            yield chunk.choices[0].delta['content']
+        except KeyError as error:
+            if str(error) == 'content':
+                pass
+        except:
+            print("Failed to process chunk", chunk)
 
 
 def count_tokens(text):
@@ -92,9 +99,6 @@ def main():
     while True:
         user_message = get_prompt(STATE).strip()
 
-        print()
-        print(f"\033[33mSubmitting...\033[0m")
-
         if count_tokens(user_message) > max_tokens:
             print("Your message is too long. Please try again.")
             continue
@@ -105,17 +109,21 @@ def main():
         if not conversation_history:
             raise ValueError("Conversation history is empty")
 
-        ai_response = chat_with_openai(conversation_history, STATE)
+        ai_response = ""
+        print()
+        print_yellow("Assistant:" + "\n")
+        for chunk in chat_with_openai(conversation_history, STATE):
+            print(chunk, end="")
+            ai_response += chunk
+
+        print('\a')
+
         add_entry(db_session,
                   "assistant",
                   ai_response,
                   STATE.session_id,
                   )
 
-        print()
-        print_yellow("Assistant:" + "\n")
-        print(ai_response)
-        print('\a')
 
 
 if __name__ == "__main__":
