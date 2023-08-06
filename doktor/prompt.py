@@ -140,7 +140,7 @@ def get_prompt(state, # : State
 
                     readline.set_completer(completer.complete)
                     user_message = ""
-                raise InputResetException()
+                    raise InputResetException()
 
                 db = Db()
                 sesh = db.find_session(session_name)
