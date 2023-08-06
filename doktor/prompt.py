@@ -102,7 +102,8 @@ def get_prompt(state, # : State
                     state.max_tokens = get_model_config(model)["max_tokens"]
                 except LookupError:
                     print_yellow("Please enter a valid model.")
-                    raise InputResetException()
+                    user_message = ""
+                raise InputResetException()
 
                 state.model = model
                 print_green(f"Using model: {state.model}. Max context: {state.max_tokens}")
@@ -123,6 +124,7 @@ def get_prompt(state, # : State
                 else:
                     print_green(f"Switching to session: {session_name}")
                     state.session_id = session.id
+                user_message = ""
                 raise InputResetException()
 
 
@@ -137,7 +139,8 @@ def get_prompt(state, # : State
                     print_yellow("Please enter a session name. Like \\rename_session my_session")
 
                     readline.set_completer(completer.complete)
-                    raise InputResetException()
+                    user_message = ""
+                raise InputResetException()
 
                 db = Db()
                 sesh = db.find_session(session_name)
@@ -149,6 +152,7 @@ def get_prompt(state, # : State
                 db.rename_chat_session(state.session_id, session_name)
                 print_green(f"Renamed current session to: {session_name}")
                 readline.set_completer(completer.complete)
+                user_message = ""
                 raise InputResetException()
 
 
@@ -165,6 +169,7 @@ def get_prompt(state, # : State
                     if msg.role == "assistant":
                         print_yellow(f"Assistant:\n")
                         print(msg.content)
+                user_message = ""
                 raise InputResetException()
 
             if re.match(END_OF_INPUT, line):
@@ -177,6 +182,7 @@ def get_prompt(state, # : State
                 print_yellow("Sessions:")
                 for session in sessions:
                     print_yellow(f"  {session.name}")
+                user_message = ""
                 raise InputResetException()
 
 
@@ -192,6 +198,7 @@ def get_prompt(state, # : State
                 else:
                     print_green(f"Switching to session: {session.name}")
                     state.session_id = session.id
+                user_message = ""
                 raise InputResetException()
 
             user_message += line + "\n"
