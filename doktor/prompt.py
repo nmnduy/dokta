@@ -96,7 +96,7 @@ def get_prompt(state, # : State
 
             if re.match(MODEL_REGEX, line):
 
-                model = re.match(r"\\model (.*)", line).group(1)
+                model = re.match(r"\\model (.*)", line).group(1).strip()
 
                 try:
                     state.max_tokens = get_model_config(model)["max_tokens"]
@@ -113,7 +113,7 @@ def get_prompt(state, # : State
 
             if re.match(SESSION_REGEX, line):
                 try:
-                    session_name = re.match(r"\\session (.*)", line).group(1)
+                    session_name = re.match(r"\\session (.*)", line).group(1).strip()
                 except AttributeError:
                     session_name = random_hash()
                 db = Db()
@@ -134,7 +134,7 @@ def get_prompt(state, # : State
                 readline.set_completer()
 
                 try:
-                    session_name = re.match(r"\\rename_session (.*)", line).group(1)
+                    session_name = re.match(r"\\rename_session (.*)", line).group(1).strip()
                 except AttributeError:
                     print_yellow("Please enter a session name. Like \\rename_session my_session")
 
