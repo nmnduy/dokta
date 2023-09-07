@@ -90,9 +90,11 @@ def get_prompt(state, # : State
 
             line = input()
 
+            # disable autocomplete if there is some input
+            readline.set_completer()
+
             if not line:  # Check if line is empty
                 user_message += "\n"
-
 
             if re.match(MODEL_REGEX, line):
 
