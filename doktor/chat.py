@@ -16,7 +16,7 @@ from .convo_db import setup_database_connection, add_entry, get_entries_past_wee
 
 # 'cl100k_base' is for gpt-4 and gpt-3.5-turbo
 # https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
-ENCODER = tiktoken.get_encoding('cl100k_base')
+#ENCODER = tiktoken.get_encoding('cl100k_base')
 STATE = State(model='', max_tokens=0)
 
 
@@ -82,7 +82,7 @@ def chat_with_openai(prompt, state: State):
 
 
 def count_tokens(text):
-    return len(ENCODER.encode(text))
+    return len(text) // 4
 
 
 def main():
@@ -120,6 +120,7 @@ def main():
             ai_response += chunk
 
         print('\a')
+        exit(0)
 
     # one-off mode
     elif args.question:
