@@ -119,6 +119,12 @@ def main():
             print(chunk, end="")
             ai_response += chunk
 
+        add_entry(db_session,
+                  "assistant",
+                  ai_response,
+                  STATE.session_id,
+                  )
+
         print('\a')
         exit(0)
 
@@ -141,6 +147,12 @@ def main():
         for chunk in chat_with_openai(conversation_history, STATE):
             print(chunk, end="")
             ai_response += chunk
+
+        add_entry(db_session,
+                  "assistant",
+                  ai_response,
+                  STATE.session_id,
+                  )
 
         print('\a')
         exit(0)
