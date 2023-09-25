@@ -1,4 +1,5 @@
 import re
+import argparse
 import os
 import sys
 import json
@@ -89,6 +90,61 @@ def main():
     max_tokens = get_model_config(model)["max_tokens"]
     STATE = State(model, max_tokens, session_id=Db().create_chat_session())
 
+    parser = argparse.ArgumentParser(description='Chat with GPT-3')
+    parser.add_argument('--question', '-q', type=str, help='Question for the assistant')
+    parser.add_argument('--file', '-f', type=str, help='File containing questions for the assistant')
+
+    args = parser.parse_args()
+
+    # file mode
+    if args.file:
+        with open(args.file, 'r') as file:
+            question = file.read()
+
+        if count_tokens(question) > max_tokens:
+            print("Your message is too long. Please try again.")
+            return
+
+        db_session = setup_database_connection(DB_NAME)()
+        add_entry(db_session, "user", question.strip(), STATE.session_id)
+
+        conversation_history = load_conversation_history(db_session, STATE)
+        if not conversation_history:
+            raise ValueError("Conversation history is empty")
+
+        ai_response = ""
+        print()
+        print_yellow("Assistant:" + "\n")
+        for chunk in chat_with_openai(conversation_history, STATE):
+            print(chunk, end="")
+            ai_response += chunk
+
+        print('\a')
+
+    # one-off mode
+    elif args.question:
+        if count_tokens(args.question) > max_tokens:
+            print("Your message is too long. Please try again.")
+            exit(1)
+
+        db_session = setup_database_connection(DB_NAME)()
+        add_entry(db_session, "user", args.question, STATE.session_id)
+
+        conversation_history = load_conversation_history(db_session, STATE)
+        if not conversation_history:
+            raise ValueError("Conversation history is empty")
+
+        ai_response = ""
+        print()
+        print_yellow("Assistant:" + "\n")
+        for chunk in chat_with_openai(conversation_history, STATE):
+            print(chunk, end="")
+            ai_response += chunk
+
+        print('\a')
+        exit(0)
+
+    # conversation mode
     print()
     print_yellow("Type your message, then hit Ctrl + D on an empty line to submit")
     print_yellow("Ctrl + C to exit")

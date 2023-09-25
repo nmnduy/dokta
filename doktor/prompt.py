@@ -90,19 +90,22 @@ def get_prompt(state, # : State
 
             line = input()
 
+            # disable autocomplete if there is some input
+            readline.set_completer()
+
             if not line:  # Check if line is empty
                 user_message += "\n"
 
-
             if re.match(MODEL_REGEX, line):
 
-                model = re.match(r"\\model (.*)", line).group(1)
+                model = re.match(r"\\model (.*)", line).group(1).strip()
 
                 try:
                     state.max_tokens = get_model_config(model)["max_tokens"]
                 except LookupError:
                     print_yellow("Please enter a valid model.")
-                    raise InputResetException()
+                    user_message = ""
+                raise InputResetException()
 
                 state.model = model
                 print_green(f"Using model: {state.model}. Max context: {state.max_tokens}")
@@ -112,7 +115,7 @@ def get_prompt(state, # : State
 
             if re.match(SESSION_REGEX, line):
                 try:
-                    session_name = re.match(r"\\session (.*)", line).group(1)
+                    session_name = re.match(r"\\session (.*)", line).group(1).strip()
                 except AttributeError:
                     session_name = random_hash()
                 db = Db()
@@ -123,6 +126,7 @@ def get_prompt(state, # : State
                 else:
                     print_green(f"Switching to session: {session_name}")
                     state.session_id = session.id
+                user_message = ""
                 raise InputResetException()
 
 
@@ -132,11 +136,12 @@ def get_prompt(state, # : State
                 readline.set_completer()
 
                 try:
-                    session_name = re.match(r"\\rename_session (.*)", line).group(1)
+                    session_name = re.match(r"\\rename_session (.*)", line).group(1).strip()
                 except AttributeError:
                     print_yellow("Please enter a session name. Like \\rename_session my_session")
 
                     readline.set_completer(completer.complete)
+                    user_message = ""
                     raise InputResetException()
 
                 db = Db()
@@ -149,6 +154,7 @@ def get_prompt(state, # : State
                 db.rename_chat_session(state.session_id, session_name)
                 print_green(f"Renamed current session to: {session_name}")
                 readline.set_completer(completer.complete)
+                user_message = ""
                 raise InputResetException()
 
 
@@ -165,6 +171,7 @@ def get_prompt(state, # : State
                     if msg.role == "assistant":
                         print_yellow(f"Assistant:\n")
                         print(msg.content)
+                user_message = ""
                 raise InputResetException()
 
             if re.match(END_OF_INPUT, line):
@@ -177,6 +184,7 @@ def get_prompt(state, # : State
                 print_yellow("Sessions:")
                 for session in sessions:
                     print_yellow(f"  {session.name}")
+                user_message = ""
                 raise InputResetException()
 
 
@@ -192,15 +200,13 @@ def get_prompt(state, # : State
                 else:
                     print_green(f"Switching to session: {session.name}")
                     state.session_id = session.id
+                user_message = ""
                 raise InputResetException()
 
             user_message += line + "\n"
 
         # ctrl + z or ctrl + d to submit
         except EOFError:
-            if not user_message.strip():
-                print("Buh bye")
-                sys.exit()
             break
         # trick to reset the prompt after we switch model
         except InputResetException:
