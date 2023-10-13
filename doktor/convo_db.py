@@ -96,4 +96,4 @@ class Db:
 
 
     def get_last_session(self, offset: int = 0) -> Session:
-        return self.db_session.query(Session).order_by(Session.id.desc()).offset(offset).first()
+        return self.db_session.query(Session).order_by(Session.created_at.desc()).offset(offset).first()
