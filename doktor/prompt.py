@@ -84,6 +84,7 @@ def get_prompt(state, # : State
     print()
     print(f"\033[32mYou:\033[0m")
 
+    is_multi_line = False
     while True:
 
         try:
@@ -92,9 +93,6 @@ def get_prompt(state, # : State
 
             # disable autocomplete if there is some input
             readline.set_completer()
-
-            if not line:  # Check if line is empty
-                user_message += "\n"
 
             if re.match(MODEL_REGEX, line):
 
@@ -203,11 +201,26 @@ def get_prompt(state, # : State
                 user_message = ""
                 raise InputResetException()
 
+            # terminate single line input on ENTER
+            if not is_multi_line:
+                user_message += line + "\n"
+                break
+
+            # terminate multi-line input
+            if is_multi_line and line.startswith('"""'):
+                user_message += line + "\n"
+                break
+
+            # Terminate multi-line input
+            if line.startswith('"""'):
+                is_multi_line = not is_multi_line
+                continue
+
+            if not line:  # Check if line is empty
+                user_message += "\n"
+
             user_message += line + "\n"
 
-        # ctrl + z or ctrl + d to submit
-        except EOFError:
-            break
         # trick to reset the prompt after we switch model
         except InputResetException:
             print()

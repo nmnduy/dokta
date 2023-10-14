@@ -159,8 +159,9 @@ def main():
 
     # conversation mode
     print()
-    print_yellow("Type your message, then hit Ctrl + D on an empty line to submit")
+    print_yellow("Type your message, then 'Enter' to send.")
     print_yellow("Ctrl + C to exit")
+    print_yellow('If you want multi-line input, wrap your message in triple quotes. e.g. """Hello!"""')
     print()
     print_green(f"Using model: {model}. Context length: {max_tokens}")
     db_session = setup_database_connection(DB_NAME)()
