@@ -201,23 +201,24 @@ def get_prompt(state, # : State
                 user_message = ""
                 raise InputResetException()
 
-            # terminate single line input on ENTER
-            if not is_multi_line:
-                user_message += line + "\n"
-                break
+            # Terminate multi-line input
+            if line.startswith('"""'):
+                is_multi_line = not is_multi_line
+                continue
 
             # terminate multi-line input
             if is_multi_line and line.startswith('"""'):
                 user_message += line + "\n"
                 break
 
-            # Terminate multi-line input
-            if line.startswith('"""'):
-                is_multi_line = not is_multi_line
-                continue
-
             if not line:  # Check if line is empty
                 user_message += "\n"
+                continue
+
+            # terminate single line input on ENTER
+            if not is_multi_line:
+                user_message += line + "\n"
+                break
 
             user_message += line + "\n"
 
