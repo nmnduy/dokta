@@ -125,6 +125,7 @@ def get_prompt(state, # : State
                     print_green(f"Switching to session: {session_name}")
                     state.session_id = session.id
                 user_message = ""
+                is_multi_line = False
                 raise InputResetException()
 
 
