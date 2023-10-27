@@ -91,9 +91,6 @@ def get_prompt(state, # : State
 
             line = input()
 
-            # disable autocomplete if there is some input
-            readline.set_completer()
-
             if re.match(MODEL_REGEX, line):
 
                 model = re.match(r"\\model (.*)", line).group(1).strip()
