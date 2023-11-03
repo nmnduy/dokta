@@ -199,7 +199,7 @@ def get_prompt(state, # : State
                 user_message = ""
                 raise InputResetException()
 
-            if line.startswith('"""'):
+            if line.startswith('"""') or line.endswith('"""'):
                 # Terminate multi-line input
                 if is_multi_line:
                     user_message += line + "\n"
