@@ -8,6 +8,7 @@ setup(
         "openai",
         "tiktoken",
         "sqlalchemy",
+        "retrying",
     ],
     entry_points={
         "console_scripts": [

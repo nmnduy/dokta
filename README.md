@@ -4,6 +4,7 @@ Another chatbot that calls OpenAI models, with some
 
 - Chat messages are stored locally
 - Chats have sessions, which are group of messages
+- Multi-line input with `"""`
 
 ## Setup
 ```
@@ -26,6 +27,18 @@ or
 
 ```
 CHATGPT_CLI_MODEL=gpt-3.5-turbo chat
+```
+
+Ask a single question, get an answer then terminate
+
+```
+CHATGPT_CLI_MODEL=gpt-3.5-turbo chat -q '<question>'
+```
+
+For long text input, the question can be written to `question`, then submit it with
+
+```
+CHATGPT_CLI_MODEL=gpt-3.5-turbo chat -f question
 ```
 
 ## Models
@@ -51,6 +64,8 @@ Messages in the same session are sent to OpenAI API together.
 
 `\messages` to see messages in the current session.
 
+`\last_session [previous index]` to switch to previous sessions. If no parameter is provided, then the parameter is `1` by default. `\last_session 1` will switch to the previous session. `\last_session 2` will switch to the session before the previous session. So on and so forth.
+
 ## DB Migration
 
 Used this tool: `https://github.com/pressly/goose`
@@ -65,11 +80,12 @@ goose -dir migration/ sqlite3 ./convo_db.sqlite.db down
 ```
 
 
-## Terminating input
+## Multiline input
 
-It's surprisingly complicated to Ctrl+Enter to terminate input.(Maybe it's not that complicated, please submit a PR).
+For long input, use `"""` to wrap your input.
 
-Here are ways to terminate input:
+## Issues
 
-- On a new line, hit `Ctrl+D`
-- On a new line, `<` then `Tab`, which will produce `<endofinput>`, then `Enter`
+### pasting code is really bad and does not work sometimes.
+
+Python `input` does not like pasting long code input for some reason. Workarounds can be using option `-f`, or merge code input into a single line before pasting it in the dialog.

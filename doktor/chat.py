@@ -6,6 +6,7 @@ import json
 import time
 import openai
 import tiktoken
+from retrying import retry
 from .structs import State
 from .prompt import get_prompt
 from .config import get_model_config
@@ -42,23 +43,9 @@ def load_conversation_history(db_session, state: State): # -> List[Dict[str, str
 
 
 
-def retry(func):
-    def wrapper(*args, **kwargs):
-        max_retries = 3
-        backoff = 3
-        for i in range(max_retries):
-            try:
-                return func(*args, **kwargs)
-            except openai.error.APIConnectionError:
-                if i == max_retries - 1:
-                    raise
-                print(f"Encountered APIConnectionError, retrying in {backoff} seconds...")
-                time.sleep(backoff)
-                backoff *= 2
-    return wrapper
 
 
-@retry
+@retry(stop_max_attempt_number=3, wait_fixed=2000)
 def chat_with_openai(prompt, state: State):
     model = state.model
     response = openai.ChatCompletion.create(
@@ -119,6 +106,12 @@ def main():
             print(chunk, end="")
             ai_response += chunk
 
+        add_entry(db_session,
+                  "assistant",
+                  ai_response,
+                  STATE.session_id,
+                  )
+
         print('\a')
         exit(0)
 
@@ -142,13 +135,20 @@ def main():
             print(chunk, end="")
             ai_response += chunk
 
+        add_entry(db_session,
+                  "assistant",
+                  ai_response,
+                  STATE.session_id,
+                  )
+
         print('\a')
         exit(0)
 
     # conversation mode
     print()
-    print_yellow("Type your message, then hit Ctrl + D on an empty line to submit")
+    print_yellow("Type your message, then 'Enter' to send.")
     print_yellow("Ctrl + C to exit")
+    print_yellow('If you want multi-line input, wrap your message in triple quotes. e.g. """Hello!"""')
     print()
     print_green(f"Using model: {model}. Context length: {max_tokens}")
     db_session = setup_database_connection(DB_NAME)()
