@@ -26,10 +26,13 @@ def add_entry(db_session,
               role,
               content,
               session_id = None,   # Optional[int] = None
+              model = None,        # Optional[str] = None
               ):
     entry = ConversationEntry(role=role,
                               content=content,
-                              session_id=session_id)
+                              session_id=session_id,
+                              model=model,
+                              )
     db_session.add(entry)
     db_session.commit()
 
