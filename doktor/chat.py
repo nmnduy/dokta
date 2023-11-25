@@ -6,6 +6,7 @@ import json
 import time
 import openai
 import tiktoken
+import requests
 from retrying import retry
 from .structs import State
 from .prompt import get_prompt
@@ -21,6 +22,11 @@ from .convo_db import setup_database_connection, add_entry, get_entries_past_wee
 STATE = State(model='', max_tokens=0)
 
 
+def messages_to_prompt(messages): # -> str:
+    prompt = ""
+    for message in messages:
+        prompt += f"{message['role']}: {message['content']}\n"
+    return prompt
 
 
 def load_conversation_history(db_session, state: State): # -> List[Dict[str, str]]:
@@ -43,10 +49,37 @@ def load_conversation_history(db_session, state: State): # -> List[Dict[str, str
 
 
 
+def chat(messages, state: State):
+    config = get_model_config(state.model)
+    if config.get("backend") == "ollama":
+        prompt = messages_to_prompt(messages)
+        return chat_with_ollama(prompt, state)
+    else:
+        return chat_with_openai(messages, state)
+
+
+
+def chat_with_ollama(prompt: str, state: State):
+    response = requests.post(
+        'http://localhost:11434/api/generate',
+        json={
+            "model": state.model,
+            "prompt": prompt,
+        },
+        stream=True
+    )
+    for line in response.iter_lines():
+        if line:
+            chunk = json.loads(line.decode('utf-8'))
+            if 'error' in chunk:
+                raise Exception("Error receiving response from ollama server: " + chunk['error'])
+            yield chunk['response']
+
 
 
 @retry(stop_max_attempt_number=3, wait_fixed=2000)
-def chat_with_openai(prompt, state: State):
+def chat_with_openai(messages, # List[Dict[str, str]]
+                     state: State):
     model = state.model
     response = openai.ChatCompletion.create(
         model=model,
@@ -102,7 +135,7 @@ def main():
         ai_response = ""
         print()
         print_yellow("Assistant:" + "\n")
-        for chunk in chat_with_openai(conversation_history, STATE):
+        for chunk in chat(conversation_history, STATE):
             print(chunk, end="")
             ai_response += chunk
 
@@ -131,7 +164,7 @@ def main():
         ai_response = ""
         print()
         print_yellow("Assistant:" + "\n")
-        for chunk in chat_with_openai(conversation_history, STATE):
+        for chunk in chat(conversation_history, STATE):
             print(chunk, end="")
             ai_response += chunk
 
@@ -169,7 +202,7 @@ def main():
         ai_response = ""
         print()
         print_yellow("Assistant:" + "\n")
-        for chunk in chat_with_openai(conversation_history, STATE):
+        for chunk in chat(conversation_history, STATE):
             print(chunk, end="")
             ai_response += chunk
 
