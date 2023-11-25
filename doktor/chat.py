@@ -83,7 +83,7 @@ def chat_with_openai(messages, # List[Dict[str, str]]
     model = state.model
     response = openai.ChatCompletion.create(
         model=model,
-        messages=prompt,
+        messages=messages,
         # max_tokens=150,
         n=1,
         stop=None,
