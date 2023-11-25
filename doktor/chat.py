@@ -160,7 +160,7 @@ def main():
             print("Your message is too long. Please try again.")
             continue
 
-        add_entry(db_session, "user", user_message, STATE.session_id, model=STATE.model)
+        add_entry(db_session, "user", user_message, STATE.session_id)
 
         conversation_history = load_conversation_history(db_session, STATE)
         if not conversation_history:
