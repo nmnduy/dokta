@@ -26,5 +26,6 @@ class ConversationEntry(Base):
     id = Column(Integer, primary_key=True)
     role = Column(String)
     content = Column(String)
+    model = Column(String, default=None, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     session_id = Column(Integer, default=None, index=True)

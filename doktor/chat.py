@@ -179,6 +179,7 @@ def main():
                   "assistant",
                   ai_response,
                   STATE.session_id,
+                  model=STATE.model,
                   )
 
 
