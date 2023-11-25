@@ -100,7 +100,6 @@ def get_prompt(state, # : State
                 except LookupError:
                     print_yellow("Please enter a valid model.")
                     user_message = ""
-                raise InputResetException()
 
                 state.model = model
                 print_green(f"Using model: {state.model}. Max context: {state.max_tokens}")
