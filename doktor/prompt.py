@@ -82,7 +82,7 @@ def get_prompt(state, # : State
     readline.parse_and_bind('tab: complete')
 
     print()
-    print(f"\033[32mYou:\033[0m")
+    print_green("You:")
 
     is_multi_line = False
     while True:
@@ -225,7 +225,7 @@ def get_prompt(state, # : State
             print()
             print_green(f"You:")
             continue
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, EOFError):
             print("Goodbye! Have a nice day.")
             sys.exit()
 
