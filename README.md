@@ -5,6 +5,7 @@ Another chatbot that calls OpenAI models, with some
 - Chat messages are stored locally
 - Chats have sessions, which are group of messages
 - Multi-line input with `"""`
+- Support local LLM via [ollama](https://github.com/jmorganca/ollama)
 
 ## Setup
 ```
@@ -45,6 +46,21 @@ CHATGPT_CLI_MODEL=gpt-3.5-turbo chat -f question
 
 
 There are 2 models listed in `config.json`. Update that config file to add more models.
+
+To use a local LLM via `ollama`, add a new entry to `config.json` and add key `"backend": "ollama"`. For example:
+
+```
+{
+  "models": [
+    ...
+    {
+      "name": "openhermes2.5-mistral:7b",
+      "max_tokens": 8000,
+      "backend": "ollama"
+    }
+  ]
+}
+```
 
 
 To switch models, in the chat prompt, type `\model <model_name>`. You can use `Tab` to autocomplete the input.
