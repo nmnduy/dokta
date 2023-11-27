@@ -12,6 +12,11 @@
       "name": "openhermes2.5-mistral:7b",
       "max_tokens": 8000,
       "backend": "ollama"
+    },
+    {
+      "name": "orca2:latest",
+      "max_tokens": 8000,
+      "backend": "ollama"
     }
   ]
 }
