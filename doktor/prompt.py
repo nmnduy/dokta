@@ -83,7 +83,7 @@ def get_prompt(state, # : State
     readline.parse_and_bind('tab: complete')
 
     print()
-    print_green("You:")
+    print_green(PROMPT)
 
     is_multi_line = False
     while True:
