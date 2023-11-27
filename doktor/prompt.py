@@ -10,6 +10,7 @@ from .utils import random_hash
 
 
 
+PROMPT = "[You] "
 MODELS = [mod["name"] for mod in CONFIG["models"]]
 COMMANDS = ["\\model",
             "\\session",
@@ -82,7 +83,7 @@ def get_prompt(state, # : State
     readline.parse_and_bind('tab: complete')
 
     print()
-    print_green("You:")
+    print_green(PROMPT)
 
     is_multi_line = False
     while True:
@@ -161,7 +162,7 @@ def get_prompt(state, # : State
                        reverse=True)
                 for msg in messages:
                     if msg.role == "user":
-                        print_green(f"You:\n")
+                        print_green(PROMPT)
                         print(msg.content)
                     if msg.role == "assistant":
                         print_yellow(f"Assistant:\n")
@@ -223,7 +224,7 @@ def get_prompt(state, # : State
         # trick to reset the prompt after we switch model
         except InputResetException:
             print()
-            print_green(f"You:")
+            print_green(PROMPT)
             continue
         except (KeyboardInterrupt, EOFError):
             print("Goodbye! Have a nice day.")

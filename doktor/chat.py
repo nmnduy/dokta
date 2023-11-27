@@ -201,12 +201,16 @@ def main():
 
         ai_response = ""
         print()
-        print_yellow("Assistant:" + "\n")
+        print_yellow("[Assistant]")
         for chunk in chat(conversation_history, STATE):
             print(chunk, end="")
             ai_response += chunk
 
         print('\a')
+
+        # remove the "assistant:" prefix for ollam
+        if ai_response.startswith("assistant:"):
+            ai_response = ai_response[10:].strip()
 
         add_entry(db_session,
                   "assistant",
