@@ -83,14 +83,14 @@ def get_prompt(state, # : State
     readline.parse_and_bind('tab: complete')
 
     print()
-    print_green(PROMPT)
+    print_green("You:")
 
     is_multi_line = False
     while True:
 
         try:
 
-            line = sys.stdin.readline()
+            line = input()
 
             if re.match(MODEL_REGEX, line):
 
