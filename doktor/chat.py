@@ -4,7 +4,9 @@ import os
 import sys
 import json
 import time
-import openai
+from openai import OpenAI
+
+client = OpenAI()
 import tiktoken
 import requests
 from retrying import retry
@@ -81,23 +83,23 @@ def chat_with_ollama(prompt: str, state: State):
 def chat_with_openai(messages, # List[Dict[str, str]]
                      state: State):
     model = state.model
-    response = openai.ChatCompletion.create(
-        model=model,
-        messages=messages,
-        # max_tokens=150,
-        n=1,
-        stop=None,
-        temperature=1.0,
-        timeout=120,
-        stream=True,
-    )
+    response = client.chat.completions.create(model=model,
+    messages=messages,
+    # max_tokens=150,
+    n=1,
+    stop=None,
+    temperature=1.0,
+    timeout=120,
+    stream=True)
     for chunk in response:
         try:
-            yield chunk.choices[0].delta['content']
+            chunk_content = chunk.choices[0].delta.content
+            if chunk_content:
+                yield chunk_content
         except KeyError as error:
             if str(error) == 'content':
                 pass
-        except:
+        except Exception as error:
             print("Failed to process chunk", chunk)
 
 
