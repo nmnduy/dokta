@@ -199,14 +199,22 @@ def get_prompt(state, # : State
                 user_message = ""
                 raise InputResetException()
 
-            if line.startswith('"""') or line.endswith('"""'):
+            if line.startswith('"""') or line.endswith('"""') or line.startswith("'''") or line.endswith("'''"):
+
+                quote_used = '"""' if line.startswith('"""') or line.endswith('"""') else "'''"
+
                 # Terminate multi-line input
-                if is_multi_line:
+                if is_multi_line and quote_used == quote_type:
                     user_message += line + "\n"
                     break
-                # start multi-line input
+                # Continue multi-line input because quote is not closed
+                elif is_multi_line and quote_used != quote_type:
+                    user_message += line + "\n"
+                    continue
+                # Start multi-line input
                 else:
                     is_multi_line = True
+                    quote_type = '"""' if line.startswith('"""') or line.endswith('"""') else "'''"
                     user_message += line + "\n"
                     continue
 
