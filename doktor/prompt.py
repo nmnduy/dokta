@@ -83,7 +83,7 @@ def get_prompt(state, # : State
     readline.parse_and_bind('tab: complete')
 
     print()
-    print_green(PROMPT)
+    print_green(PROMPT, newline=False)
 
     is_multi_line = False
     while True:
@@ -162,7 +162,7 @@ def get_prompt(state, # : State
                        reverse=True)
                 for msg in messages:
                     if msg.role == "user":
-                        print_green(PROMPT)
+                        print_green(PROMPT, newline=False)
                         print(msg.content)
                     if msg.role == "assistant":
                         print_yellow(f"Assistant:\n")
@@ -232,7 +232,7 @@ def get_prompt(state, # : State
         # trick to reset the prompt after we switch model
         except InputResetException:
             print()
-            print_green(PROMPT)
+            print_green(PROMPT, newline=False)
             continue
         except (KeyboardInterrupt, EOFError):
             print("Goodbye! Have a nice day.")
