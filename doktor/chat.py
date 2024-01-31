@@ -136,7 +136,7 @@ def main():
 
         ai_response = ""
         print()
-        print_yellow("Assistant:" + "\n")
+        print_yellow("[Assistant]" + "\n")
         for chunk in chat(conversation_history, STATE):
             print(chunk, end="")
             ai_response += chunk
@@ -165,7 +165,7 @@ def main():
 
         ai_response = ""
         print()
-        print_yellow("Assistant:" + "\n")
+        print_yellow("[Assistant]" + "\n")
         for chunk in chat(conversation_history, STATE):
             print(chunk, end="")
             ai_response += chunk
