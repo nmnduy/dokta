@@ -11,6 +11,7 @@ from .utils import random_hash
 
 
 PROMPT = "> "
+ANSWER = "  "
 MODELS = [mod["name"] for mod in CONFIG["models"]]
 COMMANDS = ["\\model",
             "\\session",
@@ -165,7 +166,7 @@ def get_prompt(state, # : State
                         print_green(PROMPT, newline=False)
                         print(msg.content)
                     if msg.role == "assistant":
-                        print_yellow(f"Assistant:\n")
+                        print_yellow(ANSWER, newline=False)
                         print(msg.content)
                 user_message = ""
                 raise InputResetException()

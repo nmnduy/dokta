@@ -11,7 +11,7 @@ import tiktoken
 import requests
 from retrying import retry
 from .structs import State
-from .prompt import get_prompt
+from .prompt import get_prompt, ANSWER
 from .config import get_model_config
 from .print_colors import print_green, print_yellow
 from .convo_db import setup_database_connection, add_entry, get_entries_past_week, DB_NAME, Db
@@ -136,7 +136,7 @@ def main():
 
         ai_response = ""
         print()
-        print_yellow("[Assistant]" + "\n")
+        print_yellow(ANSWER, newline=False)
         for chunk in chat(conversation_history, STATE):
             print(chunk, end="")
             ai_response += chunk
@@ -165,7 +165,7 @@ def main():
 
         ai_response = ""
         print()
-        print_yellow("[Assistant]" + "\n")
+        print_yellow(ANSWER, newline=False)
         for chunk in chat(conversation_history, STATE):
             print(chunk, end="")
             ai_response += chunk
@@ -205,7 +205,7 @@ def main():
 
         ai_response = ""
         print()
-        print_yellow("[Assistant]")
+        print_yellow(ANSWER, newline=False)
         for chunk in chat(conversation_history, STATE):
             print(chunk, end="")
             ai_response += chunk
