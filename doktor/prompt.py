@@ -10,8 +10,8 @@ from .utils import random_hash
 
 
 
-PROMPT = "> "
-ANSWER = "  "
+PROMPT = ">\n"
+ANSWER = " \n"
 MODELS = [mod["name"] for mod in CONFIG["models"]]
 COMMANDS = ["\\model",
             "\\session",
