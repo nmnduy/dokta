@@ -92,6 +92,7 @@ def get_prompt(state, # : State
         try:
 
             line = input()
+            line = line.replace('\t', '  ')
 
             if re.match(MODEL_REGEX, line):
 
