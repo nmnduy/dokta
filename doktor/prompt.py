@@ -174,6 +174,7 @@ def get_prompt(state, # : State
                 sorted(messages,
                        key=lambda x: x.created_at,
                        reverse=True)
+                print_yellow(f"Messages for session: {state.session_id}")
                 print()
                 for msg in messages:
                     if msg.role == "user":
@@ -181,6 +182,8 @@ def get_prompt(state, # : State
                     if msg.role == "assistant":
                         print(ANSWER + msg.content)
                     print()
+                print_yellow("End of messages.")
+                print()
                 user_message = ""
                 raise InputResetException()
 
