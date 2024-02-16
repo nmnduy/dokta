@@ -4,7 +4,7 @@ Another chatbot that calls OpenAI models, with some
 
 - Chat messages are stored locally
 - Chats have sessions, which are group of messages
-- Multi-line input with `"""`
+- Multi-line input with `"""` or `'''`
 - Support local LLM via [ollama](https://github.com/jmorganca/ollama)
 
 ## Setup
@@ -98,7 +98,7 @@ goose -dir migration/ sqlite3 ./convo_db.sqlite.db down
 
 ## Multiline input
 
-For long input, use `"""` to wrap your input.
+For multi-line input, use `"""` or `'''` to wrap your input.
 
 ## Issues
 
