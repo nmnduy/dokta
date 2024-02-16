@@ -19,6 +19,7 @@ COMMANDS = ["\\model",
             "\\rename_session",
             "\\messages",
             "\\last_session",
+            "\\help",
             "<endofinput>",
             ]
 END_OF_INPUT = re.compile(r"<endofinput>")
@@ -29,7 +30,17 @@ LIST_SESSION_REGEX = re.compile(r"\\list_session")
 MESSAGES_REGEX = re.compile(r"\\messages")
 LAST_SESSION_REGEX = re.compile(r"\\last_session")
 RANDOM_HASH_REGEX = re.compile(r"^[a-fA-F0-9]{64}$")
+HELP_REGEX = re.compile(r"\\help")
 
+
+def print_help():
+    print()
+    print_yellow("Type your message, then 'Enter' to send.")
+    print_yellow("Ctrl + C to exit")
+    print()
+    print_yellow('You can start multiline input with \'\'\' or """')
+    print_yellow('e.g. """Hello!<new line>How are you?""" or \'\'\'Hello!<new line>How are you?\'\'\'')
+    print()
 
 
 def model_complete(text, state):
@@ -37,8 +48,6 @@ def model_complete(text, state):
     if text == results[state]:
         return None
     return results[state]
-
-
 
 
 
@@ -93,6 +102,11 @@ def get_prompt(state, # : State
 
             line = input()
             line = line.replace('\t', '  ')
+
+            if re.match(HELP_REGEX, line):
+                print_help()
+                user_message = ""
+                raise InputResetException()
 
             if re.match(MODEL_REGEX, line):
 

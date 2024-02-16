@@ -110,6 +110,11 @@ def count_tokens(text):
 def main():
     model = os.environ["CHATGPT_CLI_MODEL"]
     max_tokens = get_model_config(model)["max_tokens"]
+
+    first_use = False
+    if not Db().get_last_session():
+        first_use = True
+
     STATE = State(model, max_tokens, session_id=Db().create_chat_session())
 
     parser = argparse.ArgumentParser(description='Chat with GPT-3')
@@ -179,15 +184,10 @@ def main():
         print('\a')
         exit(0)
 
-    # conversation mode
-    print()
-    print_yellow("Type your message, then 'Enter' to send.")
-    print_yellow("Ctrl + C to exit")
-    print()
-    print_yellow('You can start multiline input with \'\'\' or """')
-    print_yellow('e.g. """Hello!<new line>How are you?""" or \'\'\'Hello!<new line>How are you?\'\'\'')
-    print()
-    print_green(f"Using model: {model}. Context length: {max_tokens}")
+    print_yellow(f"Using model: {model}. Context length: {max_tokens}")
+    if first_use:
+        print_yellow(f"\\help for help. \\model to change model. \\session to go to a previous session. \\rename_session to rename this session. Ctrl + c quit.")
+
     db_session = setup_database_connection(DB_NAME)()
 
     while True:
