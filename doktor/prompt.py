@@ -10,8 +10,9 @@ from .utils import random_hash
 
 
 
-PROMPT = ">\n"
-ANSWER = " \n"
+PROMPT = "> "
+ANSWER = "🤖 "
+
 MODELS = [mod["name"] for mod in CONFIG["models"]]
 COMMANDS = ["\\model",
             "\\session",
@@ -92,15 +93,12 @@ def get_prompt(state, # : State
     readline.set_completer(completer.complete)
     readline.parse_and_bind('tab: complete')
 
-    print()
-    print_green(PROMPT, newline=False)
-
     is_multi_line = False
     while True:
 
         try:
 
-            line = input()
+            line = input(PROMPT)
             line = line.replace('\t', '  ')
 
             if re.match(HELP_REGEX, line):
@@ -176,13 +174,13 @@ def get_prompt(state, # : State
                 sorted(messages,
                        key=lambda x: x.created_at,
                        reverse=True)
+                print()
                 for msg in messages:
                     if msg.role == "user":
-                        print_green(PROMPT, newline=False)
-                        print(msg.content)
+                        print(PROMPT + msg.content)
                     if msg.role == "assistant":
-                        print_yellow(ANSWER, newline=False)
-                        print(msg.content)
+                        print(ANSWER + msg.content)
+                    print()
                 user_message = ""
                 raise InputResetException()
 
@@ -248,7 +246,6 @@ def get_prompt(state, # : State
         # trick to reset the prompt after we switch model
         except InputResetException:
             print()
-            print_green(PROMPT, newline=False)
             continue
         except (KeyboardInterrupt, EOFError):
             print("Goodbye! Have a nice day.")

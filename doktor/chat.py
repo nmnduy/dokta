@@ -205,7 +205,7 @@ def main():
 
         ai_response = ""
         print()
-        print_yellow(ANSWER, newline=False)
+        print_yellow(ANSWER)
         for chunk in chat(conversation_history, STATE):
             print(chunk, end="")
             ai_response += chunk
@@ -222,6 +222,7 @@ def main():
                   STATE.session_id,
                   model=STATE.model,
                   )
+        print()
 
 
 
