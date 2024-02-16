@@ -11,7 +11,7 @@ import tiktoken
 import requests
 from retrying import retry
 from .structs import State
-from .prompt import get_prompt
+from .prompt import get_prompt, ANSWER
 from .config import get_model_config
 from .print_colors import print_green, print_yellow
 from .convo_db import setup_database_connection, add_entry, get_entries_past_week, DB_NAME, Db
@@ -110,6 +110,11 @@ def count_tokens(text):
 def main():
     model = os.environ["CHATGPT_CLI_MODEL"]
     max_tokens = get_model_config(model)["max_tokens"]
+
+    first_use = False
+    if not Db().get_last_session():
+        first_use = True
+
     STATE = State(model, max_tokens, session_id=Db().create_chat_session())
 
     parser = argparse.ArgumentParser(description='Chat with GPT-3')
@@ -136,7 +141,7 @@ def main():
 
         ai_response = ""
         print()
-        print_yellow("Assistant:" + "\n")
+        print_yellow(ANSWER, newline=False)
         for chunk in chat(conversation_history, STATE):
             print(chunk, end="")
             ai_response += chunk
@@ -165,7 +170,7 @@ def main():
 
         ai_response = ""
         print()
-        print_yellow("Assistant:" + "\n")
+        print_yellow(ANSWER, newline=False)
         for chunk in chat(conversation_history, STATE):
             print(chunk, end="")
             ai_response += chunk
@@ -179,15 +184,10 @@ def main():
         print('\a')
         exit(0)
 
-    # conversation mode
-    print()
-    print_yellow("Type your message, then 'Enter' to send.")
-    print_yellow("Ctrl + C to exit")
-    print()
-    print_yellow('You can start multiline input with \'\'\' or """')
-    print_yellow('e.g. """Hello!<new line>How are you?""" or \'\'\'Hello!<new line>How are you?\'\'\'')
-    print()
-    print_green(f"Using model: {model}. Context length: {max_tokens}")
+    print_yellow(f"Using model: {model}. Context length: {max_tokens}")
+    if first_use:
+        print_yellow(f"\\help for help. \\model to change model. \\session to go to a previous session. \\rename_session to rename this session. Ctrl + c quit.")
+
     db_session = setup_database_connection(DB_NAME)()
 
     while True:
@@ -205,7 +205,7 @@ def main():
 
         ai_response = ""
         print()
-        print_yellow("[Assistant]")
+        print_yellow(ANSWER)
         for chunk in chat(conversation_history, STATE):
             print(chunk, end="")
             ai_response += chunk
@@ -222,6 +222,7 @@ def main():
                   STATE.session_id,
                   model=STATE.model,
                   )
+        print()
 
 
 
