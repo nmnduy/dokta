@@ -9,7 +9,7 @@ from retrying import retry
 from .structs import State
 from .prompt import get_prompt, ANSWER
 from .config import get_model_config
-from .print_colors import print_yellow
+from .print_colors import print_yellow, print_red
 from .convo_db import setup_database_connection, add_entry, get_entries_past_week, DB_NAME, Db
 
 
@@ -18,6 +18,11 @@ from .convo_db import setup_database_connection, add_entry, get_entries_past_wee
 # https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
 #ENCODER = tiktoken.get_encoding('cl100k_base')
 STATE = State(model='', max_tokens=0)
+ANTHROPIC_MODEL_MAP = {
+    "opus": "claude-3-opus-20240229",
+    "sonnet": "claude-3-sonnet-20240229",
+    "haiku": "claude-3-haiku-20240307",
+}
 
 
 def messages_to_prompt(messages): # -> str:
@@ -48,11 +53,53 @@ def load_conversation_history(db_session, state: State): # -> List[Dict[str, str
 
 def chat(messages, state: State):
     config = get_model_config(state.model)
-    if config.get("backend") == "ollama":
+    backend = config.get("backend", "openai")
+    if backend == "ollama":
         prompt = messages_to_prompt(messages)
         return chat_with_ollama(prompt, state)
+    elif backend == "anthropic":
+        return chat_with_anthropic(messages, state)
     else:
         return chat_with_openai(messages, state)
+
+
+@retry(stop_max_attempt_number=3, wait_fixed=1000)
+def chat_with_anthropic(messages,  # List[Dict[str, str]]
+                        state: State):
+    actual_model = ANTHROPIC_MODEL_MAP[state.model]
+    if not actual_model:
+        raise ValueError(f"Model {state.model} not found in ANTHROPIC_MODEL_MAP")
+
+    # context is 100k-200k tokens
+    # but output is capped at 4096 tokens
+    max_tokens = 4096
+
+    if "ANTHROPIC_API_KEY" not in os.environ:
+        print_red("Please set env var ANTHROPIC_API_KEY")
+        exit(1)
+
+    response = requests.post(
+        "https://api.anthropic.com/v1/messages",
+        headers={
+            "x-api-key": os.environ["ANTHROPIC_API_KEY"],
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        },
+        json={
+            "model": actual_model,
+            "max_tokens": max_tokens,
+            "messages": messages,
+            "stream": True
+        }
+    )
+    for line in response.iter_lines():
+        line = line.decode('utf-8')
+        if line.startswith('data: '):
+            chunk = json.loads(line[6:].strip())
+            if chunk['type'] == 'content_block_delta':
+                yield chunk['delta']['text']
+            elif chunk['type'] == 'error':
+                raise Exception("Error receiving response from anthropic server: " + chunk['error'])
 
 
 
@@ -74,9 +121,13 @@ def chat_with_ollama(prompt: str, state: State):
 
 
 
-@retry(stop_max_attempt_number=3, wait_fixed=2000)
+@retry(stop_max_attempt_number=3, wait_fixed=1000)
 def chat_with_openai(messages, # List[Dict[str, str]]
                      state: State):
+    if "OPENAI_API_KEY" not in os.environ:
+        print_red("Please set env var OPENAI_API_KEY")
+        exit(1)
+
     model = state.model
     response = client.chat.completions.create(model=model,
     messages=messages,

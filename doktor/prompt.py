@@ -99,7 +99,7 @@ def get_prompt(state, # : State
 
     user_message = ""
 
-    # readline.set_completer_delims(' \t\n;')
+    readline.set_completer_delims(' \t\n;')
     readline.set_completer(get_completer().complete)
     readline.parse_and_bind('tab: complete')
 
@@ -127,7 +127,8 @@ def get_prompt(state, # : State
                         print_yellow("Please enter a valid model.")
                     else:
                         state.model = model
-                        print_green(f"Using model: {state.model}. Max context: {state.max_tokens}")
+                        backend = get_model_config(model).get("backend", "openai")
+                        print_yellow(f"Using model: {state.model}. Max context: {state.max_tokens}. Provider: {backend}")
                 else:
                     print_yellow("Please enter a model. Like \\model gpt-4")
                 user_message = ""
