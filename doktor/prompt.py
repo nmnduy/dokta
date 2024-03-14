@@ -12,6 +12,10 @@ from .utils import random_hash
 PROMPT = "> "
 ANSWER = "🤖 "
 
+OPTION_PASTE = "paste"
+OPTIONS = {
+    OPTION_PASTE: False,
+}
 MODELS = [mod["name"] for mod in CONFIG["models"]]
 COMMANDS = ["\\model",
             "\\session",
@@ -19,6 +23,7 @@ COMMANDS = ["\\model",
             "\\rename_session",
             "\\messages",
             "\\last_session",
+            "\\set <key> <value>",
             "\\help",
             "<endofinput>",
             ]
@@ -30,6 +35,7 @@ LIST_SESSION_REGEX = re.compile(r"\\list_session")
 MESSAGES_REGEX = re.compile(r"\\messages")
 LAST_SESSION_REGEX = re.compile(r"\\last_session")
 RANDOM_HASH_REGEX = re.compile(r"^[a-fA-F0-9]{64}$")
+SET_OPTION_REGEX = re.compile(r"\\set (\w+) (\w+)")
 HELP_REGEX = re.compile(r"\\help")
 
 
@@ -76,6 +82,16 @@ def command_complete(text, state):
     return results[state]
 
 
+def get_completer():
+    # leave out chat sessions from autocomplete
+    # + [
+        # item.name for item in Db().get_all_chat_sessions()
+        # if not re.match(RANDOM_HASH_REGEX, item.name)
+    # ]
+    options = MODELS + COMMANDS + list(OPTIONS.keys())
+    completer = AutoComplete(list(set(options)))
+    return completer
+
 
 
 def get_prompt(state, # : State
@@ -83,13 +99,8 @@ def get_prompt(state, # : State
 
     user_message = ""
 
-    options = MODELS + COMMANDS + [
-        item.name for item in Db().get_all_chat_sessions()
-        if not re.match(RANDOM_HASH_REGEX, item.name)
-    ]
-    completer = AutoComplete(list(set(options)))
-    readline.set_completer_delims(' \t\n;')
-    readline.set_completer(completer.complete)
+    # readline.set_completer_delims(' \t\n;')
+    readline.set_completer(get_completer().complete)
     readline.parse_and_bind('tab: complete')
 
     is_multi_line = False
@@ -106,20 +117,39 @@ def get_prompt(state, # : State
                 raise InputResetException()
 
             if re.match(MODEL_REGEX, line):
+                model_match = re.match(r"\\model (.*)", line)
+                if model_match:
+                    model = model_match.group(1).strip()
 
-                model = re.match(r"\\model (.*)", line).group(1).strip()
-
-                try:
-                    state.max_tokens = get_model_config(model)["max_tokens"]
-                except LookupError:
-                    print_yellow("Please enter a valid model.")
-                    user_message = ""
-
-                state.model = model
-                print_green(f"Using model: {state.model}. Max context: {state.max_tokens}")
+                    try:
+                        state.max_tokens = get_model_config(model)["max_tokens"]
+                    except LookupError:
+                        print_yellow("Please enter a valid model.")
+                    else:
+                        state.model = model
+                        print_green(f"Using model: {state.model}. Max context: {state.max_tokens}")
+                else:
+                    print_yellow("Please enter a model. Like \\model gpt-4")
                 user_message = ""
                 raise InputResetException()
 
+            if re.match(SET_OPTION_REGEX, line):
+                match = re.match(SET_OPTION_REGEX, line)
+                if not match:
+                    print_yellow("Please enter a valid option. Like \\set <key> <value>")
+                    user_message = ""
+                    raise InputResetException()
+                key, value = match.group(1), match.group(2)
+                if key in OPTIONS:
+                    value_type = type(OPTIONS[key])
+                    value = value_type(value)
+                    OPTIONS[key] = value
+                    print_green(f"Set option '{key}' to {value}")
+                    handle_new_options(key)
+                else:
+                    print_yellow(f"Option {key} not found.")
+                user_message = ""
+                raise InputResetException()
 
             if re.match(SESSION_REGEX, line):
                 try:
@@ -258,3 +288,11 @@ def get_prompt(state, # : State
             continue
 
     return user_message
+
+
+def handle_new_options(key: str):
+    if key == OPTION_PASTE:
+        if OPTIONS[OPTION_PASTE]:
+            readline.set_completer(None)
+        else:
+            readline.set_completer(get_completer().complete)
