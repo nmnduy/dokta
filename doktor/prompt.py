@@ -1,6 +1,5 @@
 import sys
 import re
-import json
 import readline
 from .exceptions import InputResetException
 from .print_colors import print_green, print_yellow

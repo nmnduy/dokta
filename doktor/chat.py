@@ -1,19 +1,15 @@
-import re
 import argparse
 import os
-import sys
 import json
-import time
 from openai import OpenAI
 
 client = OpenAI()
-import tiktoken
 import requests
 from retrying import retry
 from .structs import State
 from .prompt import get_prompt, ANSWER
 from .config import get_model_config
-from .print_colors import print_green, print_yellow
+from .print_colors import print_yellow
 from .convo_db import setup_database_connection, add_entry, get_entries_past_week, DB_NAME, Db
 
 
@@ -33,7 +29,6 @@ def messages_to_prompt(messages): # -> str:
 
 def load_conversation_history(db_session, state: State): # -> List[Dict[str, str]]:
     max_tokens = state.max_tokens
-    model = state.model
     session_id = state.session_id
     entries = get_entries_past_week(db_session, session_id=session_id)
 
