@@ -3,7 +3,6 @@ import os
 import json
 from openai import OpenAI
 
-client = OpenAI()
 import requests
 from retrying import retry
 from .structs import State
@@ -129,7 +128,7 @@ def chat_with_openai(messages, # List[Dict[str, str]]
         exit(1)
 
     model = state.model
-    response = client.chat.completions.create(model=model,
+    response = OpenAI().chat.completions.create(model=model,
     messages=messages,
     # max_tokens=150,
     n=1,

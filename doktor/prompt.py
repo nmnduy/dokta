@@ -18,18 +18,18 @@ OPTIONS = {
 }
 MODELS = [mod["name"] for mod in CONFIG["models"]]
 COMMANDS = ["\\model",
-            "\\session",
+            "\\new_session",
             "\\list_session",
             "\\rename_session",
             "\\messages",
             "\\last_session",
-            "\\set <key> <value>",
+            # "\\set <key> <value>",
             "\\help",
             "<endofinput>",
             ]
 END_OF_INPUT = re.compile(r"<endofinput>")
 MODEL_REGEX = re.compile(r"\\model")
-SESSION_REGEX = re.compile(r"\\session")
+NEW_SESSION_REGEX = re.compile(r"\\new_session")
 RENAME_SESSION_REGEX = re.compile(r"\\rename_session")
 LIST_SESSION_REGEX = re.compile(r"\\list_session")
 MESSAGES_REGEX = re.compile(r"\\messages")
@@ -152,7 +152,7 @@ def get_prompt(state, # : State
                 user_message = ""
                 raise InputResetException()
 
-            if re.match(SESSION_REGEX, line):
+            if re.match(NEW_SESSION_REGEX, line):
                 try:
                     session_name = re.match(r"\\session (.*)", line).group(1).strip()
                 except AttributeError:
