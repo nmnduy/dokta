@@ -1,6 +1,9 @@
 import sys
+import os
 import re
 import readline
+import subprocess
+import tempfile
 from .exceptions import InputResetException
 from .print_colors import print_green, print_yellow
 from .config import CONFIG, get_model_config
@@ -23,6 +26,7 @@ COMMANDS = ["\\model",
             "\\rename_session",
             "\\messages",
             "\\last_session",
+            "\\file",
             # "\\set <key> <value>",
             "\\help",
             "<endofinput>",
@@ -36,6 +40,7 @@ MESSAGES_REGEX = re.compile(r"\\messages")
 LAST_SESSION_REGEX = re.compile(r"\\last_session")
 RANDOM_HASH_REGEX = re.compile(r"^[a-fA-F0-9]{64}$")
 SET_OPTION_REGEX = re.compile(r"\\set (\w+) (\w+)")
+FILE_REGEX = re.compile(r"\\file")
 HELP_REGEX = re.compile(r"\\help")
 
 
@@ -245,6 +250,18 @@ def get_prompt(state, # : State
                     state.session_id = session.id
                 user_message = ""
                 raise InputResetException()
+
+            if re.match(FILE_REGEX, line):
+
+                with tempfile.NamedTemporaryFile(mode="w+", delete=False) as temp_file:
+                    temp_file_path = temp_file.name
+
+                subprocess.run([os.environ.get("CHATGPT_CLI_TEXT_EDITOR", "vim"), temp_file_path])
+
+                with open(temp_file_path, "r") as temp_file:
+                    user_message = temp_file.read()
+
+                break
 
             if line.startswith('"""') or line.endswith('"""') or line.startswith("'''") or line.endswith("'''"):
 
