@@ -238,9 +238,9 @@ def main():
     while True:
         user_message = get_prompt(STATE).strip()
 
-        if count_tokens(user_message) > max_tokens:
-            print("Your message is too long. Please try again.")
-            continue
+        # if count_tokens(user_message) > max_tokens:
+        #     print("Your message is too long. Please try again.")
+        #     continue
 
         add_entry(db_session, "user", user_message, STATE.session_id)
 
