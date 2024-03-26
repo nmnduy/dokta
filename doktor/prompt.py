@@ -185,7 +185,7 @@ def get_prompt(state, # : State
                 except AttributeError:
                     print_yellow("Please enter a session name. Like \\rename_session my_session")
 
-                    readline.set_completer(completer.complete)
+                    readline.set_completer(get_completer().complete)
                     user_message = ""
                     raise InputResetException()
 
@@ -198,7 +198,7 @@ def get_prompt(state, # : State
 
                 db.rename_chat_session(state.session_id, session_name)
                 print_green(f"Renamed current session to: {session_name}")
-                readline.set_completer(completer.complete)
+                readline.set_completer(get_completer().complete)
                 user_message = ""
                 raise InputResetException()
 
