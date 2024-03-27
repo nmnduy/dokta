@@ -22,6 +22,21 @@
       "name": "orca2:13b",
       "max_tokens": 4096,
       "backend": "ollama"
+    },
+    {
+      "name": "sonnet",
+      "max_tokens": 4096,
+      "backend": "anthropic"
+    },
+    {
+      "name": "haiku",
+      "max_tokens": 4096,
+      "backend": "anthropic"
+    },
+    {
+      "name": "opus",
+      "max_tokens": 4096,
+      "backend": "anthropic"
     }
   ]
 }
