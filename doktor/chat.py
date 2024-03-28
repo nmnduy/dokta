@@ -105,7 +105,7 @@ def chat_with_anthropic(messages,  # List[Dict[str, str]]
             if chunk['type'] == 'content_block_delta':
                 yield chunk['delta']['text']
             elif chunk['type'] == 'error':
-                raise Exception("Error receiving response from anthropic server: " + chunk['error'])
+                raise Exception("Error receiving response from anthropic server: " + str(chunk['error']))
 
 
 @retry(stop_max_attempt_number=3, wait_fixed=300)
