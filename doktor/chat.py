@@ -23,6 +23,11 @@ ANTHROPIC_MODEL_MAP = {
     "haiku": "claude-3-haiku-20240307",
 }
 
+BACKEND_OPENAI = "openai"
+BACKEND_OLLAMA = "ollama"
+BACKEND_ANTHROPIC = "anthropic"
+BACKEND_GROQ = "groq"
+
 
 def messages_to_prompt(messages): # -> str:
     prompt = ""
@@ -52,12 +57,14 @@ def load_conversation_history(db_session, state: State): # -> List[Dict[str, str
 
 def chat(messages, state: State):
     config = get_model_config(state.model)
-    backend = config.get("backend", "openai")
-    if backend == "ollama":
+    backend = config.get("backend", BACKEND_OPENAI)
+    if backend == BACKEND_OLLAMA:
         prompt = messages_to_prompt(messages)
         return chat_with_ollama(prompt, state)
-    elif backend == "anthropic":
+    elif backend == BACKEND_ANTHROPIC:
         return chat_with_anthropic(messages, state)
+    elif backend == BACKEND_GROQ:
+        return chat_with_grog(messages, state)
     else:
         return chat_with_openai(messages, state)
 
@@ -98,7 +105,43 @@ def chat_with_anthropic(messages,  # List[Dict[str, str]]
             if chunk['type'] == 'content_block_delta':
                 yield chunk['delta']['text']
             elif chunk['type'] == 'error':
-                raise Exception("Error receiving response from anthropic server: " + chunk['error'])
+                raise Exception("Error receiving response from anthropic server: " + str(chunk['error']))
+
+
+@retry(stop_max_attempt_number=3, wait_fixed=300)
+def chat_with_grog(messages, # List[Dict[str, str]]
+                   state: State):
+
+    max_tokens = state.max_tokens
+
+    if "GROQ_API_KEY" not in os.environ:
+        print_red("Please set env var GROQ_API_KEY")
+        exit(1)
+
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    response = requests.post(
+        url,
+        headers={
+            "Authorization": f"Bearer {os.environ['GROQ_API_KEY']}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": state.model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "stream": True
+        })
+    for line in response.iter_lines():
+        # payload we want look like this b'data: {"id":"chatcmpl-e38cab93-3a9d-971e-acec-700dacf6a4c8","object":"chat.completion.chunk","created":1711526569,"model":"mixtral-8x7b-32768","system_fingerprint":"fp_1cc6d039b0","choices":[{"index":0,"delta":{"content":" scope"},"logprobs":null,"finish_reason":null}]}'
+        if line.startswith(b'data: '):
+            try:
+                chunk = json.loads(line[6:].strip())
+                if chunk['object'] == 'chat.completion.chunk':
+                    yield chunk['choices'][0]['delta']['content']
+                elif chunk['object'] == 'error':
+                    raise Exception("Error receiving response from groq server: " + chunk['error'])
+            except (KeyError, json.decoder.JSONDecodeError):
+                pass
 
 
 
