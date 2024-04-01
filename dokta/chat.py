@@ -100,6 +100,13 @@ def chat_with_anthropic(messages,  # List[Dict[str, str]]
     )
     for line in response.iter_lines():
         line = line.decode('utf-8')
+        # if line is a JSON with 'error', treat this as an error
+        try:
+            chunk = json.loads(line)
+            if 'error' in chunk:
+                raise Exception("Error receiving response from anthropic server: " + str(chunk['error']))
+        except json.decoder.JSONDecodeError:
+            pass
         if line.startswith('data: '):
             chunk = json.loads(line[6:].strip())
             if chunk['type'] == 'content_block_delta':
