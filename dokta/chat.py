@@ -10,6 +10,7 @@ from .prompt import get_prompt, ANSWER
 from .config import get_model_config
 from .print_colors import print_yellow, print_red
 from .convo_db import setup_database_connection, add_entry, get_entries_past_week, DB_NAME, Db
+from .constants import ROLE_USER, ROLE_ASSISTANT
 
 
 
@@ -72,6 +73,16 @@ def chat(messages, state: State):
 @retry(stop_max_attempt_number=3, wait_fixed=1000)
 def chat_with_anthropic(messages,  # List[Dict[str, str]]
                         state: State):
+    conversation = [msg for msg in messages.copy() if msg['content'].strip() != '']
+
+    i = 0
+    while i < len(conversation) - 1:
+        if conversation[i]['role'] == conversation[i+1]['role']:
+            conversation[i]['content'] += '\n' + conversation[i+1]['content']
+            del conversation[i+1]
+        else:
+            i += 1
+
     actual_model = ANTHROPIC_MODEL_MAP[state.model]
     if not actual_model:
         raise ValueError(f"Model {state.model} not found in ANTHROPIC_MODEL_MAP")
@@ -94,7 +105,7 @@ def chat_with_anthropic(messages,  # List[Dict[str, str]]
         json={
             "model": actual_model,
             "max_tokens": max_tokens,
-            "messages": messages,
+            "messages": conversation,
             "stream": True
         }
     )
@@ -228,7 +239,7 @@ def main():
             return
 
         db_session = setup_database_connection(DB_NAME)()
-        add_entry(db_session, "user", question.strip(), STATE.session_id)
+        add_entry(db_session, ROLE_USER, question.strip(), STATE.session_id)
 
         conversation_history = load_conversation_history(db_session, STATE)
         if not conversation_history:
@@ -242,7 +253,7 @@ def main():
             ai_response += chunk
 
         add_entry(db_session,
-                  "assistant",
+                  ROLE_ASSISTANT,
                   ai_response,
                   STATE.session_id,
                   )
@@ -257,7 +268,7 @@ def main():
             exit(1)
 
         db_session = setup_database_connection(DB_NAME)()
-        add_entry(db_session, "user", args.question, STATE.session_id)
+        add_entry(db_session, ROLE_USER, args.question, STATE.session_id)
 
         conversation_history = load_conversation_history(db_session, STATE)
         if not conversation_history:
@@ -271,7 +282,7 @@ def main():
             ai_response += chunk
 
         add_entry(db_session,
-                  "assistant",
+                  ROLE_ASSISTANT,
                   ai_response,
                   STATE.session_id,
                   )
@@ -292,7 +303,7 @@ def main():
         #     print("Your message is too long. Please try again.")
         #     continue
 
-        add_entry(db_session, "user", user_message, STATE.session_id)
+        add_entry(db_session, ROLE_USER, user_message, STATE.session_id)
 
         conversation_history = load_conversation_history(db_session, STATE)
         if not conversation_history:
@@ -312,7 +323,7 @@ def main():
             ai_response = ai_response[10:].strip()
 
         add_entry(db_session,
-                  "assistant",
+                  ROLE_ASSISTANT,
                   ai_response,
                   STATE.session_id,
                   model=STATE.model,
