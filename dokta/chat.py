@@ -52,14 +52,8 @@ def load_conversation_history(db_session, state: State): # -> List[Dict[str, str
             token_count += entry_token_count
         else:
             break
-    tries = 3
-    while tries > 0:
-        history = conversation_text[::-1]
-        if not history:
-            tries -= 1
-            if tries == 0:
-                raise ValueError("Conversation history is empty")
-    return history
+    return conversation_text[::-1]
+
 
 
 def chat(messages, state: State):
@@ -247,8 +241,9 @@ def main():
         db_session = setup_database_connection(DB_NAME)()
         add_entry(db_session, ROLE_USER, question.strip(), STATE.session_id)
 
-
         conversation_history = load_conversation_history(db_session, STATE)
+        if not conversation_history:
+            raise ValueError("Conversation history is empty")
 
         ai_response = ""
         print()
