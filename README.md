@@ -8,9 +8,11 @@ Another chatbot that calls OpenAI models, with some
 - `\file` input mode to enter long input
 - Support local LLM via [ollama](https://github.com/jmorganca/ollama)
 
-## Setup
+## Install
 ```
-pip3 install -e .
+bash build_release.sh
+chmod +x ./dist/chat
+mv ./dist/chat /usr/local/bin
 ```
 
 ## Usage
