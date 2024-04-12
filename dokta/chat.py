@@ -99,7 +99,7 @@ def retry(max_attempts=3, delay_ms=1000):
         return wrapper
     return decorator
 
-@retry(max_attempts=3, delay_ms=1)
+@retry(max_attempts=3, delay_ms=500)
 def chat_with_anthropic(messages,  # List[Dict[str, str]]
                         state: State):
     conversation = [msg for msg in messages.copy() if msg['content'].strip() != '']
@@ -155,7 +155,7 @@ def chat_with_anthropic(messages,  # List[Dict[str, str]]
                 raise Exception("Error receiving response from anthropic server: " + str(chunk['error']))
 
 
-@retry(stop_max_attempt_number=3, wait_fixed=300)
+@retry(max_attempts=3, delay_ms=500)
 def chat_with_grog(messages, # List[Dict[str, str]]
                    state: State):
 
