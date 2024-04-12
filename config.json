@@ -47,6 +47,11 @@
       "name": "mixtral-8x7b-32768",
       "max_tokens": 32768,
       "backend": "groq"
+    },
+    {
+      "name": "samantha-mistral:7b-instruct-q4_0",
+      "max_tokens": 8000,
+      "backend": "ollama"
     }
   ]
 }

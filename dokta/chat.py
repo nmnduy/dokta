@@ -3,7 +3,6 @@ import os
 import json
 
 import requests
-from retrying import retry
 from .structs import State
 from .prompt import get_prompt, ANSWER
 from .config import get_model_config
@@ -69,7 +68,38 @@ def chat(messages, state: State):
         return chat_with_openai(messages, state)
 
 
-@retry(stop_max_attempt_number=3, wait_fixed=1000)
+import time
+from functools import wraps
+
+def retry(max_attempts=3, delay_ms=1000):
+    """
+    A decorator that retries a function up to `max_attempts` times if it raises an exception.
+
+    Args:
+        max_attempts (int): The maximum number of attempts to make.
+        delay_ms (int): The delay_ms in milliseconds between each attempt.
+
+    Returns:
+        A decorator that retries the decorated function.
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while attempts < max_attempts:
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    print(f"Function {func.__name__} raised an exception: {e}")
+                    attempts += 1
+                    if attempts < max_attempts:
+                        print(f"Retrying function {func.__name__} ({attempts}/{max_attempts})")
+                        time.sleep(delay_ms / 1000)  # Convert delay_ms from milliseconds to seconds
+            raise Exception(f"Function {func.__name__} failed after {max_attempts} attempts.")
+        return wrapper
+    return decorator
+
+@retry(max_attempts=3, delay_ms=1)
 def chat_with_anthropic(messages,  # List[Dict[str, str]]
                         state: State):
     conversation = [msg for msg in messages.copy() if msg['content'].strip() != '']
@@ -180,7 +210,7 @@ def chat_with_ollama(prompt: str, state: State):
 
 
 
-@retry(stop_max_attempt_number=3, wait_fixed=1000)
+@retry(max_attempts=3, delay_ms=500)
 def chat_with_openai(messages, # List[Dict[str, str]]
                      state: State):
     if "OPENAI_API_KEY" not in os.environ:
