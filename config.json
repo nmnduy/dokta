@@ -9,6 +9,11 @@
       "max_tokens": 3800
     },
     {
+      "name": "nous-hermes2-mixtral:8x7b",
+      "max_tokens": 4096,
+      "backend": "ollama"
+    },
+    {
       "name": "openhermes2.5-mistral:7b",
       "max_tokens": 8000,
       "backend": "ollama"
