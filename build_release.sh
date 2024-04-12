@@ -1,6 +1,6 @@
 #!/bin/bash
 
-python setup.py install
+pip install -r requirements.txt
 pip install pyinstaller
 pyinstaller --onefile --clean main.py
 
