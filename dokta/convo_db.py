@@ -1,102 +1,117 @@
-from datetime import timedelta
-from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from .models import Base, ConversationEntry, Session
-from .utils import random_hash
+import sqlite3
+import random
+import string
+from datetime import datetime, timedelta
+from .models import ConversationEntry, Session
+import os
 
+DB_NAME = os.environ.get("DB_NAME", f"{os.path.expanduser('~')}/.local/share/dokta.db")
 
-DB_NAME = "convo_db.sqlite"
-
-
-
-
-
-# Set up the database connection
-def setup_database_connection(db_name):
-    engine = create_engine(f"sqlite:///{db_name}.db")
-    Base.metadata.create_all(engine)
-    db_session = sessionmaker(bind=engine)
-    return db_session
-
+def random_hash(length=8):
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
 # Functions to interact with the database
-def add_entry(db_session,
-              role,
-              content,
-              session_id = None,   # Optional[int] = None
-              model = None,        # Optional[str] = None
-              ):
-    entry = ConversationEntry(role=role,
-                              content=content,
-                              session_id=session_id,
-                              model=model,
-                              )
-    db_session.add(entry)
-    db_session.commit()
+def setup_database_connection(db_name):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute("""CREATE TABLE IF NOT EXISTS session (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT DEFAULT NULL,
+        created_at TEXT NOT NULL
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS conversation_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        role TEXT,
+        content TEXT,
+        model TEXT DEFAULT NULL,
+        created_at TEXT NOT NULL,
+        session_id INTEGER DEFAULT NULL
+    )""")
+    conn.commit()
+    return conn
 
+def add_entry(conn, role, content, session_id=None, model=None):
+    c = conn.cursor()
+    entry = ConversationEntry(role, content, session_id, model)
+    c.execute("INSERT INTO conversation_entries (role, content, model, created_at, session_id) VALUES (?, ?, ?, ?, ?)",
+              (entry.role, entry.content, entry.model, entry.created_at.isoformat(), entry.session_id))
+    conn.commit()
+    entry.id = c.lastrowid
+    return entry
 
-def get_entries_past_week(db_session,
-                          session_id = None, # Optional[int] = None
-                          ):
+def get_entries_past_week(conn, session_id=None):
+    c = conn.cursor()
     one_week_ago = datetime.utcnow() - timedelta(weeks=1)
     if session_id is not None:
-        return db_session.query(ConversationEntry).filter(ConversationEntry.created_at >= one_week_ago).filter(ConversationEntry.session_id == session_id).all()
-    return db_session.query(ConversationEntry).filter(ConversationEntry.created_at >= one_week_ago).all()
+        c.execute("SELECT id, role, content, model, created_at, session_id FROM conversation_entries WHERE created_at >= ? AND session_id = ?", (one_week_ago.isoformat(), session_id))
+    else:
+        c.execute("SELECT id, role, content, model, created_at, session_id FROM conversation_entries WHERE created_at >= ?", (one_week_ago.isoformat(),))
+    rows = c.fetchall()
+    entries = []
+    for row in rows:
+        entry = ConversationEntry(row[1], row[2], row[5], row[3])
+        entry.id = row[0]
+        entry.created_at = datetime.fromisoformat(row[4])
+        entries.append(entry)
+    return entries
 
-
-def delete_entry(db_session, entry_id):
-    entry = db_session.query(ConversationEntry).get(entry_id)
-    if entry:
-        db_session.delete(entry)
-        db_session.commit()
-
-
+def delete_entry(conn, entry_id):
+    c = conn.cursor()
+    c.execute("DELETE FROM conversation_entries WHERE id = ?", (entry_id,))
+    conn.commit()
 
 class Db:
-
-
     def __init__(self):
-        self.db_session = setup_database_connection(DB_NAME)()
+        self.conn = setup_database_connection(DB_NAME)
 
-
-    def create_chat_session(self,
-                            name = None, # Optiona[str] = None
-                            ) -> int:
+    def create_chat_session(self, name=None):
         if name is None:
             name = random_hash()
-        session = Session(name=name)
-        self.db_session.add(session)
-        self.db_session.commit()
+        session = Session(name)
+        c = self.conn.cursor()
+        c.execute("INSERT INTO session (name, created_at) VALUES (?, ?)", (session.name, session.created_at.isoformat()))
+        self.conn.commit()
+        session.id = c.lastrowid
         return session.id
 
+    def find_session(self, name):
+        c = self.conn.cursor()
+        c.execute("SELECT * FROM session WHERE name = ?", (name,))
+        row = c.fetchone()
+        if row:
+            session = Session(row[1])
+            session.id = row[0]
+            session.created_at = datetime.fromisoformat(row[2])
+            return session
+        return None
 
-    def find_session(self, name: str): # Optional[int]:
-        session = self.db_session.query(Session).filter(Session.name == name).first()
-        return session
+    def get_all_chat_sessions(self):
+        c = self.conn.cursor()
+        c.execute("SELECT * FROM session")
+        rows = c.fetchall()
+        sessions = []
+        for row in rows:
+            session = Session(row[1])
+            session.id = row[0]
+            session.created_at = datetime.fromisoformat(row[2])
+            sessions.append(session)
+        return sessions
 
+    def rename_chat_session(self, session_id, new_name):
+        c = self.conn.cursor()
+        c.execute("UPDATE session SET name = ? WHERE id = ?", (new_name, session_id))
+        self.conn.commit()
 
-    def get_all_chat_sessions(self): # List[Session]:
-        return self.db_session.query(Session).all()
+    def get_entries_past_week(self, session_id):
+        return get_entries_past_week(self.conn, session_id)
 
-
-    def rename_chat_session(self,
-                            session_id: int,
-                            new_name: str,
-                            ) -> None:
-        session = self.db_session.query(Session).get(session_id)
-        session.name = new_name
-        self.db_session.commit()
-
-
-    def get_entries_past_week(self,
-                              session_id = int,
-                              ):
-        session = self.db_session.query(Session).get(session_id)
-        one_week_ago = datetime.utcnow() - timedelta(weeks=1)
-        return self.db_session.query(ConversationEntry).filter(ConversationEntry.created_at >= one_week_ago).filter(ConversationEntry.session_id == session_id).all()
-
-
-    def get_last_session(self, offset: int = 0) -> Session:
-        return self.db_session.query(Session).order_by(Session.created_at.desc()).offset(offset).first()
+    def get_last_session(self, offset=0):
+        c = self.conn.cursor()
+        c.execute("SELECT * FROM session ORDER BY created_at DESC LIMIT 1 OFFSET ?", (offset,))
+        row = c.fetchone()
+        if row:
+            session = Session(row[1])
+            session.id = row[0]
+            session.created_at = datetime.fromisoformat(row[2])
+            return session
+        return None

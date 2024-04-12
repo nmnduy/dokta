@@ -1,4 +1,2 @@
-- remove openai, retrying, sqlalchemy
-- setup convo_db to local path or something
 - edit messages in the session
 - https://github.com/Raudaschl/rag-fusion

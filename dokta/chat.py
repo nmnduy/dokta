@@ -1,7 +1,6 @@
 import argparse
 import os
 import json
-from openai import OpenAI
 
 import requests
 from retrying import retry
@@ -188,25 +187,47 @@ def chat_with_openai(messages, # List[Dict[str, str]]
         print_red("Please set env var OPENAI_API_KEY")
         exit(1)
 
-    model = state.model
-    response = OpenAI().chat.completions.create(model=model,
-    messages=messages,
-    # max_tokens=150,
-    n=1,
-    stop=None,
-    temperature=1.0,
-    timeout=120,
-    stream=True)
-    for chunk in response:
-        try:
-            chunk_content = chunk.choices[0].delta.content
-            if chunk_content:
-                yield chunk_content
-        except KeyError as error:
-            if str(error) == 'content':
-                pass
-        except Exception as error:
-            print("Failed to process chunk", chunk)
+    url = "https://api.openai.com/v1/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer {}".format(os.environ["OPENAI_API_KEY"]),
+    }
+    
+    data = {
+        "model": state.model,
+        "messages": messages,
+        "max_tokens": state.max_tokens,
+        "n": 1,
+        "temperature": 0.7,
+        "stream": True,
+    }
+
+    timeout = 40
+    try:
+        response = requests.post(url, headers=headers, data=json.dumps(data), timeout=timeout)
+        response.raise_for_status()
+
+        for chunk in response.iter_lines():
+            line = chunk.decode('utf-8')
+            if line.startswith('data: '):
+                try:
+                    try:
+                        json_chunk = json.loads(line[6:].strip())
+                    except json.JSONDecodeError:
+                        # not a valid JSON, skip
+                        continue
+                    chunk_content = json_chunk['choices'][0]['delta']['content']
+                    if chunk_content:
+                        yield chunk_content
+                except KeyError as error:
+                    if str(error) == 'content':
+                        pass
+                except Exception as error:
+                    print("Failed to process chunk", chunk)
+    
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
+        return None
 
 
 def count_tokens(text):
@@ -238,7 +259,7 @@ def main():
             print("Your message is too long. Please try again.")
             return
 
-        db_session = setup_database_connection(DB_NAME)()
+        db_session = setup_database_connection(DB_NAME)
         add_entry(db_session, ROLE_USER, question.strip(), STATE.session_id)
 
         conversation_history = load_conversation_history(db_session, STATE)
@@ -267,7 +288,7 @@ def main():
             print("Your message is too long. Please try again.")
             exit(1)
 
-        db_session = setup_database_connection(DB_NAME)()
+        db_session = setup_database_connection(DB_NAME)
         add_entry(db_session, ROLE_USER, args.question, STATE.session_id)
 
         conversation_history = load_conversation_history(db_session, STATE)
@@ -294,7 +315,7 @@ def main():
     if first_use:
         print_yellow(f"\\help for help. \\model to change model. \\session to go to a previous session. \\rename_session to rename this session. Ctrl + c quit.")
 
-    db_session = setup_database_connection(DB_NAME)()
+    db_session = setup_database_connection(DB_NAME)
 
     while True:
         user_message = get_prompt(STATE).strip()

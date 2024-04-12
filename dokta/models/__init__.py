@@ -1,31 +1,17 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-
-
-
 
 # Define the ConversationEntry class
-Base = declarative_base()
+class ConversationEntry:
+    def __init__(self, role, content, session_id=None, model=None):
+        self.id = None
+        self.role = role
+        self.content = content
+        self.model = model
+        self.created_at = datetime.utcnow()
+        self.session_id = session_id
 
-
-
-class Session(Base):
-    __tablename__ = 'session'
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(255), default=None)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-
-
-
-class ConversationEntry(Base):
-    __tablename__ = 'conversation_entries'
-
-    id = Column(Integer, primary_key=True)
-    role = Column(String)
-    content = Column(String)
-    model = Column(String, default=None, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    session_id = Column(Integer, default=None, index=True)
+class Session:
+    def __init__(self, name=None):
+        self.id = None
+        self.name = name
+        self.created_at = datetime.utcnow()
