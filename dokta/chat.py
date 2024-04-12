@@ -265,7 +265,7 @@ def count_tokens(text):
 
 
 def main():
-    model = os.environ["CHATGPT_CLI_MODEL"]
+    model = os.environ["CHATGPT_CLI_MODEL"] or "gpt-3.5-turbo"
     max_tokens = get_model_config(model)["max_tokens"]
 
     first_use = False
