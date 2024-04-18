@@ -58,8 +58,7 @@ def chat(messages, state: State):
     config = get_model_config(state.model)
     backend = config.get("backend", BACKEND_OPENAI)
     if backend == BACKEND_OLLAMA:
-        prompt = messages_to_prompt(messages)
-        return chat_with_ollama(prompt, state)
+        return chat_with_ollama(messages, state)
     elif backend == BACKEND_ANTHROPIC:
         return chat_with_anthropic(messages, state)
     elif backend == BACKEND_GROQ:
@@ -192,21 +191,26 @@ def chat_with_grog(messages, # List[Dict[str, str]]
 
 
 
-def chat_with_ollama(prompt: str, state: State):
+def chat_with_ollama(messages, # List[Dict[str, str]]
+                     state: State):
     response = requests.post(
-        'http://localhost:11434/api/generate',
+        'http://localhost:11434/api/chat',
         json={
             "model": state.model,
-            "prompt": prompt,
+            "messages": messages,
         },
         stream=True
     )
     for line in response.iter_lines():
         if line:
+            # line looks like this:
+            # {'model': 'openhermes2.5-mistral:7b', 'created_at': '2024-04-18T15:11:00.372464Z', 'message': {'role': 'assistant', 'content': 'Hello'}, 'done': False}
             chunk = json.loads(line.decode('utf-8'))
             if 'error' in chunk:
                 raise Exception("Error receiving response from ollama server: " + chunk['error'])
-            yield chunk['response']
+            yield chunk['message']['content']
+            if chunk['done']:
+                break
 
 
 
