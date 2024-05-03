@@ -266,7 +266,6 @@ def chat_with_openai(messages, # List[Dict[str, str]]
     
     except requests.exceptions.RequestException as e:
 
-        import pdb; pdb.set_trace()
         print(f"Error: {e}")
         return None
 
