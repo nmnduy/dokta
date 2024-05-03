@@ -39,7 +39,7 @@ e.g.
 \model opus
 ```
 
-check `config.json` for available models
+check `config.py` for available models
 
 Ask a single question, get an answer then terminate
 
