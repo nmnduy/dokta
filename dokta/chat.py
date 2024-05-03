@@ -239,6 +239,11 @@ def chat_with_openai(messages, # List[Dict[str, str]]
     timeout = 40
     try:
         response = requests.post(url, headers=headers, data=json.dumps(data), timeout=timeout)
+
+        if response.status_code != 200:
+            print(f"Error: {response.text}")
+            return None
+
         response.raise_for_status()
 
         for chunk in response.iter_lines():
@@ -260,6 +265,8 @@ def chat_with_openai(messages, # List[Dict[str, str]]
                     print("Failed to process chunk", chunk)
     
     except requests.exceptions.RequestException as e:
+
+        import pdb; pdb.set_trace()
         print(f"Error: {e}")
         return None
 
