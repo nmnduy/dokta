@@ -35,6 +35,15 @@ def messages_to_prompt(messages): # -> str:
     return prompt
 
 
+def estimate_token_count(messages,  # List[Dict[str, str]]
+                         ): # -> int:
+    count = 0
+    for message in messages:
+        # + 1 for role
+        count += 1
+        count += count_tokens(message['content'])
+    return count
+
 def load_conversation_history(db_session, state: State): # -> List[Dict[str, str]]:
     max_tokens = state.max_tokens
     session_id = state.session_id
@@ -227,47 +236,72 @@ def chat_with_openai(messages, # List[Dict[str, str]]
         "Authorization": "Bearer {}".format(os.environ["OPENAI_API_KEY"]),
     }
     
-    data = {
-        "model": state.model,
-        "messages": messages,
-        "max_tokens": state.max_tokens,
-        "n": 1,
-        "temperature": 0.7,
-        "stream": True,
-    }
+    token_count = estimate_token_count(messages)
+    max_tokens = state.max_tokens - token_count
 
-    timeout = 40
-    try:
-        response = requests.post(url, headers=headers, data=json.dumps(data), timeout=timeout)
+    # try different max token value to make up for the lack of accurate token count
+    steps = range(max_tokens, 0, -50)
 
-        if response.status_code != 200:
-            print(f"Error: {response.text}")
+    for step in steps:
+        data = {
+            "model": state.model,
+            "messages": messages,
+            "max_tokens": step,
+            "n": 1,
+            "temperature": 0.7,
+            "stream": True,
+        }
+
+        timeout = 40
+        try:
+            response = requests.post(url, headers=headers, data=json.dumps(data), timeout=timeout)
+        except requests.exceptions.RequestException as e:
+            print(f"Error: {e}")
             return None
 
-        response.raise_for_status()
+        if response.status_code != 200:
+            try:
+                response_json = response.json()
+            except json.JSONDecodeError:
+                print (f"Error: {response.text}")
+                return None
 
-        for chunk in response.iter_lines():
-            line = chunk.decode('utf-8')
-            if line.startswith('data: '):
-                try:
-                    try:
-                        json_chunk = json.loads(line[6:].strip())
-                    except json.JSONDecodeError:
-                        # not a valid JSON, skip
-                        continue
-                    chunk_content = json_chunk['choices'][0]['delta']['content']
-                    if chunk_content:
-                        yield chunk_content
-                except KeyError as error:
-                    if str(error) == 'content':
-                        pass
-                except Exception as error:
-                    print("Failed to process chunk", chunk)
-    
-    except requests.exceptions.RequestException as e:
+            if 'error' in response_json and 'code' in response_json['error']:
+                if response_json['error']['code'] == 'context_length_exceeded':
+                    # retry with a different step
+                    print("Context length exceeded with step {}. Retrying with a different step".format(step))
+                    continue
 
-        print(f"Error: {e}")
+            print(f"Error: {response.text}")
+            return None
+        else:
+            success = True
+            break
+
+    if not success:
+        print("Context length exceeded")
         return None
+
+    response.raise_for_status()
+
+    for chunk in response.iter_lines():
+        line = chunk.decode('utf-8')
+        if line.startswith('data: '):
+            try:
+                try:
+                    json_chunk = json.loads(line[6:].strip())
+                except json.JSONDecodeError:
+                    # not a valid JSON, skip
+                    continue
+                chunk_content = json_chunk['choices'][0]['delta']['content']
+                if chunk_content:
+                    yield chunk_content
+            except KeyError as error:
+                if str(error) == 'content':
+                    pass
+            except Exception as error:
+                print("Failed to process chunk", chunk)
+    
 
 
 def count_tokens(text):
