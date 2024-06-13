@@ -3,6 +3,10 @@ import json
 CONFIG = {
   "models": [
     {
+      "name": "gpt-4o",
+      "max_tokens": 4096
+    },
+    {
       "name": "gpt-4",
       "max_tokens": 8000
     },
