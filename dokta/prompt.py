@@ -9,7 +9,7 @@ from .print_colors import print_green, print_yellow
 from .config import CONFIG, get_model_config
 from .convo_db import Db
 from .utils import random_hash
-
+from .constants import ROLE_USER, ROLE_ASSISTANT
 
 
 PROMPT = "> "
@@ -212,9 +212,9 @@ def get_prompt(state, # : State
                 print_yellow(f"Messages for session: {state.session_id}")
                 print()
                 for msg in messages:
-                    if msg.role == "user":
+                    if msg.role == ROLE_USER:
                         print(PROMPT + msg.content)
-                    if msg.role == "assistant":
+                    if msg.role == ROLE_ASSISTANT:
                         print(ANSWER + msg.content)
                     print()
                 print_yellow("End of messages.")

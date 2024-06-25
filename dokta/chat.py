@@ -1,15 +1,14 @@
 import argparse
 import os
 import json
-from openai import OpenAI
 
 import requests
-from retrying import retry
 from .structs import State
 from .prompt import get_prompt, ANSWER
 from .config import get_model_config
 from .print_colors import print_yellow, print_red
 from .convo_db import setup_database_connection, add_entry, get_entries_past_week, DB_NAME, Db
+from .constants import ROLE_USER, ROLE_ASSISTANT
 
 
 
@@ -36,6 +35,15 @@ def messages_to_prompt(messages): # -> str:
     return prompt
 
 
+def estimate_token_count(messages,  # List[Dict[str, str]]
+                         ): # -> int:
+    count = 0
+    for message in messages:
+        # + 1 for role
+        count += 1
+        count += count_tokens(message['content'])
+    return count
+
 def load_conversation_history(db_session, state: State): # -> List[Dict[str, str]]:
     max_tokens = state.max_tokens
     session_id = state.session_id
@@ -59,8 +67,7 @@ def chat(messages, state: State):
     config = get_model_config(state.model)
     backend = config.get("backend", BACKEND_OPENAI)
     if backend == BACKEND_OLLAMA:
-        prompt = messages_to_prompt(messages)
-        return chat_with_ollama(prompt, state)
+        return chat_with_ollama(messages, state)
     elif backend == BACKEND_ANTHROPIC:
         return chat_with_anthropic(messages, state)
     elif backend == BACKEND_GROQ:
@@ -69,9 +76,50 @@ def chat(messages, state: State):
         return chat_with_openai(messages, state)
 
 
-@retry(stop_max_attempt_number=3, wait_fixed=1000)
+import time
+from functools import wraps
+
+def retry(max_attempts=3, delay_ms=1000):
+    """
+    A decorator that retries a function up to `max_attempts` times if it raises an exception.
+
+    Args:
+        max_attempts (int): The maximum number of attempts to make.
+        delay_ms (int): The delay_ms in milliseconds between each attempt.
+
+    Returns:
+        A decorator that retries the decorated function.
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while attempts < max_attempts:
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    print(f"Function {func.__name__} raised an exception: {e}")
+                    attempts += 1
+                    if attempts < max_attempts:
+                        print(f"Retrying function {func.__name__} ({attempts}/{max_attempts})")
+                        time.sleep(delay_ms / 1000)  # Convert delay_ms from milliseconds to seconds
+            raise Exception(f"Function {func.__name__} failed after {max_attempts} attempts.")
+        return wrapper
+    return decorator
+
+@retry(max_attempts=3, delay_ms=500)
 def chat_with_anthropic(messages,  # List[Dict[str, str]]
                         state: State):
+    conversation = [msg for msg in messages.copy() if msg['content'].strip() != '']
+
+    i = 0
+    while i < len(conversation) - 1:
+        if conversation[i]['role'] == conversation[i+1]['role']:
+            conversation[i]['content'] += '\n' + conversation[i+1]['content']
+            del conversation[i+1]
+        else:
+            i += 1
+
     actual_model = ANTHROPIC_MODEL_MAP[state.model]
     if not actual_model:
         raise ValueError(f"Model {state.model} not found in ANTHROPIC_MODEL_MAP")
@@ -94,12 +142,19 @@ def chat_with_anthropic(messages,  # List[Dict[str, str]]
         json={
             "model": actual_model,
             "max_tokens": max_tokens,
-            "messages": messages,
+            "messages": conversation,
             "stream": True
         }
     )
     for line in response.iter_lines():
         line = line.decode('utf-8')
+        # if line is a JSON with 'error', treat this as an error
+        try:
+            chunk = json.loads(line)
+            if 'error' in chunk:
+                raise Exception("Error receiving response from anthropic server: " + str(chunk['error']))
+        except json.decoder.JSONDecodeError:
+            pass
         if line.startswith('data: '):
             chunk = json.loads(line[6:].strip())
             if chunk['type'] == 'content_block_delta':
@@ -108,7 +163,7 @@ def chat_with_anthropic(messages,  # List[Dict[str, str]]
                 raise Exception("Error receiving response from anthropic server: " + str(chunk['error']))
 
 
-@retry(stop_max_attempt_number=3, wait_fixed=300)
+@retry(max_attempts=3, delay_ms=500)
 def chat_with_grog(messages, # List[Dict[str, str]]
                    state: State):
 
@@ -145,50 +200,108 @@ def chat_with_grog(messages, # List[Dict[str, str]]
 
 
 
-def chat_with_ollama(prompt: str, state: State):
+def chat_with_ollama(messages, # List[Dict[str, str]]
+                     state: State):
     response = requests.post(
-        'http://localhost:11434/api/generate',
+        'http://localhost:11434/api/chat',
         json={
             "model": state.model,
-            "prompt": prompt,
+            "messages": messages,
         },
         stream=True
     )
     for line in response.iter_lines():
         if line:
+            # line looks like this:
+            # {'model': 'openhermes2.5-mistral:7b', 'created_at': '2024-04-18T15:11:00.372464Z', 'message': {'role': 'assistant', 'content': 'Hello'}, 'done': False}
             chunk = json.loads(line.decode('utf-8'))
             if 'error' in chunk:
                 raise Exception("Error receiving response from ollama server: " + chunk['error'])
-            yield chunk['response']
+            yield chunk['message']['content']
+            if chunk['done']:
+                break
 
 
 
-@retry(stop_max_attempt_number=3, wait_fixed=1000)
+@retry(max_attempts=3, delay_ms=500)
 def chat_with_openai(messages, # List[Dict[str, str]]
                      state: State):
     if "OPENAI_API_KEY" not in os.environ:
         print_red("Please set env var OPENAI_API_KEY")
         exit(1)
 
-    model = state.model
-    response = OpenAI().chat.completions.create(model=model,
-    messages=messages,
-    # max_tokens=150,
-    n=1,
-    stop=None,
-    temperature=1.0,
-    timeout=120,
-    stream=True)
-    for chunk in response:
+    url = "https://api.openai.com/v1/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer {}".format(os.environ["OPENAI_API_KEY"]),
+    }
+    
+    token_count = estimate_token_count(messages)
+    max_tokens = state.max_tokens - token_count
+
+    # try different max token value to make up for the lack of accurate token count
+    steps = range(max_tokens, 0, -50)
+
+    for step in steps:
+        data = {
+            "model": state.model,
+            "messages": messages,
+            "max_tokens": step,
+            "n": 1,
+            "temperature": 0.7,
+            "stream": True,
+        }
+
+        timeout = 40
         try:
-            chunk_content = chunk.choices[0].delta.content
-            if chunk_content:
-                yield chunk_content
-        except KeyError as error:
-            if str(error) == 'content':
-                pass
-        except Exception as error:
-            print("Failed to process chunk", chunk)
+            response = requests.post(url, headers=headers, data=json.dumps(data), timeout=timeout)
+        except requests.exceptions.RequestException as e:
+            print(f"Error: {e}")
+            return None
+
+        if response.status_code != 200:
+            try:
+                response_json = response.json()
+            except json.JSONDecodeError:
+                print (f"Error: {response.text}")
+                return None
+
+            if 'error' in response_json and 'code' in response_json['error']:
+                if response_json['error']['code'] == 'context_length_exceeded':
+                    # retry with a different step
+                    print("Context length exceeded with step {}. Retrying with a different step".format(step))
+                    continue
+
+            print(f"Error: {response.text}")
+            return None
+        else:
+            success = True
+            break
+
+    if not success:
+        print("Context length exceeded")
+        return None
+
+    response.raise_for_status()
+
+    for chunk in response.iter_lines():
+        line = chunk.decode('utf-8')
+        if line.startswith('data: '):
+            try:
+                try:
+                    json_chunk = json.loads(line[6:].strip())
+                except json.JSONDecodeError:
+                    # not a valid JSON, skip
+                    continue
+                chunk_content = json_chunk['choices'][0]['delta']['content']
+                if chunk_content:
+                    yield chunk_content
+            except KeyError as error:
+                if str(error) == 'content':
+                    pass
+            except Exception as error:
+                print("Failed to process chunk", chunk)
+    
 
 
 def count_tokens(text):
@@ -196,7 +309,7 @@ def count_tokens(text):
 
 
 def main():
-    model = os.environ["CHATGPT_CLI_MODEL"]
+    model = os.environ.get("CHATGPT_CLI_MODEL", "gpt-3.5-turbo")
     max_tokens = get_model_config(model)["max_tokens"]
 
     first_use = False
@@ -220,8 +333,8 @@ def main():
             print("Your message is too long. Please try again.")
             return
 
-        db_session = setup_database_connection(DB_NAME)()
-        add_entry(db_session, "user", question.strip(), STATE.session_id)
+        db_session = setup_database_connection(DB_NAME)
+        add_entry(db_session, ROLE_USER, question.strip(), STATE.session_id)
 
         conversation_history = load_conversation_history(db_session, STATE)
         if not conversation_history:
@@ -235,7 +348,7 @@ def main():
             ai_response += chunk
 
         add_entry(db_session,
-                  "assistant",
+                  ROLE_ASSISTANT,
                   ai_response,
                   STATE.session_id,
                   )
@@ -249,8 +362,8 @@ def main():
             print("Your message is too long. Please try again.")
             exit(1)
 
-        db_session = setup_database_connection(DB_NAME)()
-        add_entry(db_session, "user", args.question, STATE.session_id)
+        db_session = setup_database_connection(DB_NAME)
+        add_entry(db_session, ROLE_USER, args.question, STATE.session_id)
 
         conversation_history = load_conversation_history(db_session, STATE)
         if not conversation_history:
@@ -264,7 +377,7 @@ def main():
             ai_response += chunk
 
         add_entry(db_session,
-                  "assistant",
+                  ROLE_ASSISTANT,
                   ai_response,
                   STATE.session_id,
                   )
@@ -276,7 +389,7 @@ def main():
     if first_use:
         print_yellow(f"\\help for help. \\model to change model. \\session to go to a previous session. \\rename_session to rename this session. Ctrl + c quit.")
 
-    db_session = setup_database_connection(DB_NAME)()
+    db_session = setup_database_connection(DB_NAME)
 
     while True:
         user_message = get_prompt(STATE).strip()
@@ -285,7 +398,7 @@ def main():
         #     print("Your message is too long. Please try again.")
         #     continue
 
-        add_entry(db_session, "user", user_message, STATE.session_id)
+        add_entry(db_session, ROLE_USER, user_message, STATE.session_id)
 
         conversation_history = load_conversation_history(db_session, STATE)
         if not conversation_history:
@@ -305,7 +418,7 @@ def main():
             ai_response = ai_response[10:].strip()
 
         add_entry(db_session,
-                  "assistant",
+                  ROLE_ASSISTANT,
                   ai_response,
                   STATE.session_id,
                   model=STATE.model,

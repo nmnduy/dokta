@@ -8,9 +8,11 @@ Another chatbot that calls OpenAI models, with some
 - `\file` input mode to enter long input
 - Support local LLM via [ollama](https://github.com/jmorganca/ollama)
 
-## Setup
+## Install
 ```
-pip3 install -e .
+bash build_release.sh
+chmod +x ./dist/chat
+mv ./dist/chat /usr/local/bin/chat
 ```
 
 ## Usage
@@ -20,23 +22,24 @@ export OPENAI_API_KEY=<your openai API key>
 export ANTHROPIC_API_KEY=<you Anthropic API key if using an Anthropic model>
 ```
 
-then start the chat with
+Run the chatbot
 
 ```
-CHATGPT_CLI_MODEL=gpt-4 chat
+chat
 ```
 
-or
+switch model
 
 ```
-CHATGPT_CLI_MODEL=gpt-3.5-turbo chat
+\model <model_name>
+
+e.g.
+\model gpt-3.5-turbo
+\model gpt-4
+\model opus
 ```
 
-or
-
-```
-CHATGPT_CLI_MODEL=opus chat
-```
+check `config.py` for available models
 
 Ask a single question, get an answer then terminate
 
