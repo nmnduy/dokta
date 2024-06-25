@@ -12,7 +12,7 @@ Another chatbot that calls OpenAI models, with some
 ```
 bash build_release.sh
 chmod +x ./dist/chat
-mv ./dist/chat /usr/local/bin
+mv ./dist/chat /usr/local/bin/chat
 ```
 
 ## Usage
