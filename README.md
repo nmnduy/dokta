@@ -10,6 +10,7 @@ Another chatbot that calls OpenAI models, with some
 
 ## Install
 ```
+git checkout v0.0.1
 bash build_release.sh
 chmod +x ./dist/chat
 mv ./dist/chat /usr/local/bin/chat
