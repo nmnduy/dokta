@@ -3,6 +3,7 @@ import os
 import json
 
 import requests
+from sys import exit
 from .structs import State
 from .prompt import get_prompt, ANSWER
 from .config import get_model_config
