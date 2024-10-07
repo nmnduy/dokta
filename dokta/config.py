@@ -50,6 +50,11 @@ CONFIG = {
       "backend": "anthropic"
     },
     {
+      "name": "sonnet3-5",
+      "max_tokens": 4096,
+      "backend": "anthropic"
+    },
+    {
       "name": "mixtral-8x7b-32768",
       "max_tokens": 32768,
       "backend": "groq"

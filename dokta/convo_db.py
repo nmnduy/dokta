@@ -13,6 +13,10 @@ def random_hash(length=8):
 # Functions to interact with the database
 def setup_database_connection(db_name):
     conn = sqlite3.connect(db_name)
+    return conn
+
+def create_database(db_name):
+    conn = sqlite3.connect(db_name)
     c = conn.cursor()
     c.execute("""CREATE TABLE IF NOT EXISTS session (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,6 +31,11 @@ def setup_database_connection(db_name):
         created_at TEXT NOT NULL,
         session_id INTEGER DEFAULT NULL
     )""")
+    c.execute("""PRAGMA main.page_size = 4096;""")
+    c.execute("""PRAGMA main.cache_size=10000;""")
+    c.execute("""PRAGMA main.locking_mode=EXCLUSIVE;""")
+    c.execute("""PRAGMA main.synchronous=NORMAL;""")
+    c.execute("""PRAGMA main.journal_mode=WAL;""")
     conn.commit()
     return conn
 
@@ -62,20 +71,26 @@ def delete_entry(conn, entry_id):
 
 class Db:
     def __init__(self):
-        self.conn = setup_database_connection(DB_NAME)
+        if not os.path.exists(DB_NAME):
+            create_database(DB_NAME)
+
+    def get_conn(self):
+        return setup_database_connection(DB_NAME)
 
     def create_chat_session(self, name=None):
         if name is None:
             name = random_hash()
         session = Session(name)
-        c = self.conn.cursor()
+        conn = self.get_conn()
+        c = conn.cursor()
         c.execute("INSERT INTO session (name, created_at) VALUES (?, ?)", (session.name, session.created_at.isoformat()))
-        self.conn.commit()
+        conn.commit()
         session.id = c.lastrowid
         return session.id
 
     def find_session(self, name):
-        c = self.conn.cursor()
+        conn = self.get_conn()
+        c = conn.cursor()
         c.execute("SELECT * FROM session WHERE name = ?", (name,))
         row = c.fetchone()
         if row:
@@ -86,7 +101,8 @@ class Db:
         return None
 
     def get_all_chat_sessions(self):
-        c = self.conn.cursor()
+        conn = self.get_conn()
+        c = conn.cursor()
         c.execute("SELECT * FROM session")
         rows = c.fetchall()
         sessions = []
@@ -98,15 +114,18 @@ class Db:
         return sessions
 
     def rename_chat_session(self, session_id, new_name):
-        c = self.conn.cursor()
+        conn = self.get_conn()
+        c = conn.cursor()
         c.execute("UPDATE session SET name = ? WHERE id = ?", (new_name, session_id))
-        self.conn.commit()
+        conn.commit()
 
     def get_entries_past_week(self, session_id):
-        return get_entries_past_week(self.conn, session_id)
+        conn = self.get_conn()
+        return get_entries_past_week(conn, session_id)
 
     def get_last_session(self, offset=0):
-        c = self.conn.cursor()
+        conn = self.get_conn()
+        c = conn.cursor()
         c.execute("SELECT * FROM session ORDER BY created_at DESC LIMIT 1 OFFSET ?", (offset,))
         row = c.fetchone()
         if row:

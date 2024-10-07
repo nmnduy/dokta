@@ -3,6 +3,7 @@ import os
 import json
 
 import requests
+from sys import exit
 from .structs import State
 from .prompt import get_prompt, ANSWER
 from .config import get_model_config
@@ -17,6 +18,7 @@ from .constants import ROLE_USER, ROLE_ASSISTANT
 #ENCODER = tiktoken.get_encoding('cl100k_base')
 STATE = State(model='', max_tokens=0)
 ANTHROPIC_MODEL_MAP = {
+    "sonnet3-5": "claude-3-5-sonnet-20240620",
     "opus": "claude-3-opus-20240229",
     "sonnet": "claude-3-sonnet-20240229",
     "haiku": "claude-3-haiku-20240307",
