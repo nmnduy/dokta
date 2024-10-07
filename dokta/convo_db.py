@@ -5,7 +5,14 @@ from datetime import datetime, timedelta
 from .models import ConversationEntry, Session
 import os
 
-DB_NAME = os.environ.get("DB_NAME", f"{os.path.expanduser('~')}/.local/share/dokta.db")
+HOMEDIR = os.environ.get("HOME", os.path.expanduser("~"))
+DEFAULT_DB_DIR = os.path.join(HOMEDIR, ".local", "share")
+
+if not os.path.exists(DEFAULT_DB_DIR):
+    os.makedirs(DEFAULT_DB_DIR)
+
+DB_NAME = os.environ.get("DB_NAME",
+                         os.path.join(DEFAULT_DB_DIR, "dokta.db"))
 
 def random_hash(length=8):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
