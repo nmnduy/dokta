@@ -31,10 +31,7 @@ def create_database(db_name):
         created_at TEXT NOT NULL,
         session_id INTEGER DEFAULT NULL
     )""")
-    c.execute("""PRAGMA journal_mode = WAL;""")
-    c.execute("""PRAGMA synchronous = normal;""")
-    c.execute("""PRAGMA temp_store = memory;""")
-    c.execute("""PRAGMA mmap_size = 30000000000;""")
+    c.execute("""PRAGMA journal_mode = DELETE;""")
     conn.commit()
     return conn
 
