@@ -31,11 +31,10 @@ def create_database(db_name):
         created_at TEXT NOT NULL,
         session_id INTEGER DEFAULT NULL
     )""")
-    c.execute("""PRAGMA main.page_size = 4096;""")
-    c.execute("""PRAGMA main.cache_size=10000;""")
-    c.execute("""PRAGMA main.locking_mode=EXCLUSIVE;""")
-    c.execute("""PRAGMA main.synchronous=NORMAL;""")
-    c.execute("""PRAGMA main.journal_mode=WAL;""")
+    c.execute("""PRAGMA journal_mode = WAL;""")
+    c.execute("""PRAGMA synchronous = normal;""")
+    c.execute("""PRAGMA temp_store = memory;""")
+    c.execute("""PRAGMA mmap_size = 30000000000;""")
     conn.commit()
     return conn
 
